@@ -64,7 +64,7 @@ func getenvRequired(key string) string {
 }
 
 // Escape a string so it contains no byte values over 127 and doesn't contain
-// any of the characters '\x00', '\n', or '\\'.
+// any of the characters '\x00' or '\n'.
 func escape(s string) string {
 	var buf bytes.Buffer
 	for _, b := range []byte(s) {
