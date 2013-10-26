@@ -15,9 +15,9 @@
 //
 // import "git.torproject.org/pluggable-transports/websocket.git/src/pt"
 // var ptInfo pt.ServerInfo
-// info = pt.ServerSetup([]string{"foo", "bar"})
-// for _, bindAddr := range info.BindAddrs {
-// 	ln, err := startListener(bindAddr.Addr)
+// ptInfo = pt.ServerSetup([]string{"foo", "bar"})
+// for _, bindAddr := range ptInfo.BindAddrs {
+// 	ln, err := startListener(bindAddr.Addr, bindAddr.MethodName)
 // 	if err != nil {
 // 		pt.SmethodError(bindAddr.MethodName, err.Error())
 // 		continue
@@ -25,7 +25,7 @@
 // 	pt.Smethod(bindAddr.MethodName, ln.Addr())
 // }
 // pt.SmethodsDone()
-// func handler(conn net.Conn, methodName) {
+// func handler(conn net.Conn, methodName string) {
 // 	or, err := pt.ConnectOr(&ptInfo, conn, methodName)
 // 	if err != nil {
 // 		return
