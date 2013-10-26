@@ -2,6 +2,7 @@
 //
 // Sample client usage:
 //
+// import "git.torproject.org/pluggable-transports/websocket.git/src/pt"
 // pt.ClientSetup([]string{"foo"})
 // ln, err := startSocksListener()
 // if err != nil {
@@ -12,6 +13,7 @@
 //
 // Sample server usage:
 //
+// import "git.torproject.org/pluggable-transports/websocket.git/src/pt"
 // var ptInfo pt.ServerInfo
 // info = pt.ServerSetup([]string{"foo", "bar"})
 // for _, bindAddr := range info.BindAddrs {
