@@ -12,7 +12,7 @@ func stringIsSafe(s string) bool {
 }
 
 func TestEscape(t *testing.T) {
-	tests := [...]string {
+	tests := [...]string{
 		"",
 		"abc",
 		"a\nb",
@@ -22,7 +22,7 @@ func TestEscape(t *testing.T) {
 		"ab\n\\",
 	}
 
-	check := func (input string) {
+	check := func(input string) {
 		output := escape(input)
 		if !stringIsSafe(output) {
 			t.Errorf("escape(%q) → %q", input, output)
