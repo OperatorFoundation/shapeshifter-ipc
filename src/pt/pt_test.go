@@ -1,5 +1,6 @@
 package pt
 
+import "os"
 import "testing"
 
 func stringIsSafe(s string) bool {
@@ -36,5 +37,25 @@ func TestEscape(t *testing.T) {
 		check(string([]byte{byte(b)}))
 		// check UTF-8 encoding of each character 0–255
 		check(string(b))
+	}
+}
+
+func TestGetManagedTransportVer(t *testing.T) {
+	tests := [...]struct {
+		input, expected string
+	}{
+		{"1", "1"},
+		{"1,1", "1"},
+		{"1,2", "1"},
+		{"2,1", "1"},
+		{"2", ""},
+	}
+
+	for _, test := range tests {
+		os.Setenv("TOR_PT_MANAGED_TRANSPORT_VER", test.input)
+		output := getManagedTransportVer()
+		if output != test.expected {
+			t.Errorf("%q → %q (expected %q)", test.input, output, test.expected)
+		}
 	}
 }
