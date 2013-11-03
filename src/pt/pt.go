@@ -56,6 +56,19 @@ import (
 	"time"
 )
 
+// Represents an error that can happen during negotiation, for example
+// ENV-ERROR. When an error occurs, we print it to stdout and also pass it up
+// the return chain.
+type ptErr struct {
+	Keyword string
+	Args    []string
+}
+
+// Implements the error interface.
+func (err *ptErr) Error() string {
+	return formatLine(err.Keyword, err.Args...)
+}
+
 func getenv(key string) string {
 	return os.Getenv(key)
 }
