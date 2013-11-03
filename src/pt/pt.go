@@ -87,15 +87,19 @@ func escape(s string) string {
 	return buf.String()
 }
 
-// Print a pluggable transports protocol line to stdout. The line consists of an
-// unescaped keyword, followed by any number of escaped strings.
-func Line(keyword string, v ...string) {
+func formatLine(keyword string, v ...string) string {
 	var buf bytes.Buffer
 	buf.WriteString(keyword)
 	for _, x := range v {
 		buf.WriteString(" " + escape(x))
 	}
-	fmt.Println(buf.String())
+	return buf.String()
+}
+
+// Print a pluggable transports protocol line to stdout. The line consists of an
+// unescaped keyword, followed by any number of escaped strings.
+func Line(keyword string, v ...string) {
+	fmt.Println(formatLine(keyword, v...))
 	os.Stdout.Sync()
 }
 
