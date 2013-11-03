@@ -73,7 +73,12 @@ func startListener(addr *net.TCPAddr) (net.Listener, error) {
 }
 
 func main() {
-	ptInfo = pt.ServerSetup([]string{"dummy"})
+	var err error
+
+	ptInfo, err = pt.ServerSetup([]string{"dummy"})
+	if err != nil {
+		os.Exit(1)
+	}
 
 	listeners := make([]net.Listener, 0)
 	for _, bindAddr := range ptInfo.BindAddrs {

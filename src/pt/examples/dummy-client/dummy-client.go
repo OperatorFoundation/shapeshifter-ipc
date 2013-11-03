@@ -89,7 +89,12 @@ func startListener(addr string) (net.Listener, error) {
 }
 
 func main() {
-	ptInfo = pt.ClientSetup([]string{"dummy"})
+	var err error
+
+	ptInfo, err = pt.ClientSetup([]string{"dummy"})
+	if err != nil {
+		os.Exit(1)
+	}
 
 	listeners := make([]net.Listener, 0)
 	for _, methodName := range ptInfo.MethodNames {

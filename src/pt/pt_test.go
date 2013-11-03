@@ -53,7 +53,10 @@ func TestGetManagedTransportVer(t *testing.T) {
 
 	for _, test := range tests {
 		os.Setenv("TOR_PT_MANAGED_TRANSPORT_VER", test.input)
-		output := getManagedTransportVer()
+		output, err := getManagedTransportVer()
+		if err != nil {
+			t.Errorf("%q unexpectedly returned an error", test.input)
+		}
 		if output != test.expected {
 			t.Errorf("%q → %q (expected %q)", test.input, output, test.expected)
 		}
