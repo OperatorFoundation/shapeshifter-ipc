@@ -199,10 +199,6 @@ func ClientSetup(methodNames []string) ClientInfo {
 	}
 
 	info.MethodNames = getClientTransports(methodNames)
-	if len(info.MethodNames) == 0 {
-		CmethodsDone()
-		os.Exit(1)
-	}
 
 	return info
 }
@@ -352,10 +348,6 @@ func ServerSetup(methodNames []string) ServerInfo {
 	}
 
 	info.BindAddrs = getServerBindAddrs(methodNames)
-	if len(info.BindAddrs) == 0 {
-		SmethodsDone()
-		os.Exit(1)
-	}
 
 	var extendedOrPort = getenv("TOR_PT_EXTENDED_SERVER_PORT")
 	if extendedOrPort != "" {
