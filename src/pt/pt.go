@@ -3,12 +3,16 @@
 // Sample client usage:
 //
 // import "git.torproject.org/pluggable-transports/websocket.git/src/pt"
-// pt.ClientSetup([]string{"foo"})
-// ln, err := startSocksListener()
-// if err != nil {
-// 	panic(err.Error())
+// var ptInfo pt.ClientInfo
+// ptInfo = pt.ClientSetup([]string{"foo"})
+// for _, methodName := range ptInfo.MethodNames {
+// 	ln, err := startSocksListener()
+// 	if err != nil {
+// 		pt.CmethodError(methodName, err.Error())
+// 		continue
+// 	}
+// 	pt.Cmethod(methodName, "socks4", ln.Addr())
 // }
-// pt.Cmethod("foo", "socks4", ln.Addr())
 // pt.CmethodsDone()
 //
 // Sample server usage:
