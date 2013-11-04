@@ -19,6 +19,8 @@ import (
 import "git.torproject.org/pluggable-transports/websocket.git/src/pt"
 import "git.torproject.org/pluggable-transports/websocket.git/src/pt/socks"
 
+var ptInfo pt.ClientInfo
+
 // When a connection handler starts, +1 is written to this channel; when it
 // ends, -1 is written.
 var handlerChan = make(chan int)
@@ -87,12 +89,18 @@ func startListener(addr string) (net.Listener, error) {
 }
 
 func main() {
-	pt.ClientSetup([]string{"dummy"})
-	ln, err := startListener("127.0.0.1:0")
-	if err != nil {
-		pt.CmethodError("dummy", err.Error())
+	ptInfo = pt.ClientSetup([]string{"dummy"})
+
+	listeners := make([]net.Listener, 0)
+	for _, methodName := range ptInfo.MethodNames {
+		ln, err := startListener("127.0.0.1:0")
+		if err != nil {
+			pt.CmethodError(methodName, err.Error())
+			continue
+		}
+		pt.Cmethod(methodName, "socks4", ln.Addr())
+		listeners = append(listeners, ln)
 	}
-	pt.Cmethod("dummy", "socks4", ln.Addr())
 	pt.CmethodsDone()
 
 	var numHandlers int = 0
@@ -109,7 +117,9 @@ func main() {
 		case sig = <-sigChan:
 		}
 	}
-	ln.Close()
+	for _, ln := range listeners {
+		ln.Close()
+	}
 
 	if sig == syscall.SIGTERM {
 		return
