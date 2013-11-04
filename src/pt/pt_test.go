@@ -41,17 +41,34 @@ func TestEscape(t *testing.T) {
 }
 
 func TestGetManagedTransportVer(t *testing.T) {
-	tests := [...]struct {
+	badTests := [...]string {
+		"",
+		"2",
+	}
+	goodTests := [...]struct {
 		input, expected string
 	}{
 		{"1", "1"},
 		{"1,1", "1"},
 		{"1,2", "1"},
 		{"2,1", "1"},
-		{"2", ""},
 	}
 
-	for _, test := range tests {
+	os.Clearenv()
+	_, err := getManagedTransportVer()
+	if err == nil {
+		t.Errorf("empty environment unexpectedly succeeded")
+	}
+
+	for _, input := range badTests {
+		os.Setenv("TOR_PT_MANAGED_TRANSPORT_VER", input)
+		_, err := getManagedTransportVer()
+		if err == nil {
+			t.Errorf("%q unexpectedly succeeded", input)
+		}
+	}
+
+	for _, test := range goodTests {
 		os.Setenv("TOR_PT_MANAGED_TRANSPORT_VER", test.input)
 		output, err := getManagedTransportVer()
 		if err != nil {
