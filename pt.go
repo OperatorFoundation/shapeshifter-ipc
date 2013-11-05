@@ -2,7 +2,7 @@
 //
 // Sample client usage:
 //
-// import "git.torproject.org/pluggable-transports/websocket.git/src/pt"
+// import "git.torproject.org/pluggable-transports/goptlib.git"
 // var ptInfo pt.ClientInfo
 // var err error
 // ptInfo, err := pt.ClientSetup([]string{"foo"})
@@ -21,7 +21,7 @@
 //
 // Sample server usage:
 //
-// import "git.torproject.org/pluggable-transports/websocket.git/src/pt"
+// import "git.torproject.org/pluggable-transports/goptlib.git"
 // var ptInfo pt.ServerInfo
 // var err error
 // ptInfo, err = pt.ServerSetup([]string{"foo", "bar"})

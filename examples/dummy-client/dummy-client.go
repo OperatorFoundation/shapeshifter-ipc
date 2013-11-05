@@ -16,8 +16,8 @@ import (
 	"syscall"
 )
 
-import "git.torproject.org/pluggable-transports/websocket.git/src/pt"
-import "git.torproject.org/pluggable-transports/websocket.git/src/pt/socks"
+import "git.torproject.org/pluggable-transports/goptlib.git"
+import "git.torproject.org/pluggable-transports/goptlib.git/socks"
 
 var ptInfo pt.ClientInfo
 
