@@ -130,22 +130,23 @@ func doError(keyword string, v ...string) *ptErr {
 	return &ptErr{keyword, v}
 }
 
-// Emit an ENV-ERROR with explanation text. Return the error as a ptErr.
+// Emit an ENV-ERROR line with explanation text. Return the error as a ptErr.
 func EnvError(msg string) error {
 	return doError("ENV-ERROR", msg)
 }
 
-// Emit a VERSION-ERROR with explanation text. Return the error as a ptErr.
+// Emit a VERSION-ERROR line with explanation text. Return the error as a ptErr.
 func VersionError(msg string) error {
 	return doError("VERSION-ERROR", msg)
 }
 
-// Emit a CMETHOD-ERROR with explanation text. Return the error as a ptErr.
+// Emit a CMETHOD-ERROR line with explanation text. Return the error as a ptErr.
 func CmethodError(methodName, msg string) error {
 	return doError("CMETHOD-ERROR", methodName, msg)
 }
 
-// Emit an SMETHOD-ERROR with explanation text. Return the error as a ptErr.
+// Emit an SMETHOD-ERROR line with explanation text. Return the error as a
+// ptErr.
 func SmethodError(methodName, msg string) error {
 	return doError("SMETHOD-ERROR", methodName, msg)
 }
