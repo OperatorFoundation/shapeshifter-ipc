@@ -41,7 +41,7 @@ func TestEscape(t *testing.T) {
 }
 
 func TestGetManagedTransportVer(t *testing.T) {
-	badTests := [...]string {
+	badTests := [...]string{
 		"",
 		"2",
 	}
