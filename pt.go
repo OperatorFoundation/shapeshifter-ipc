@@ -431,7 +431,7 @@ func computeClientHash(info *ServerInfo, clientNonce, serverNonce []byte) []byte
 	return h.Sum([]byte{})
 }
 
-func extOrPortAuthenticate(s *net.TCPConn, info *ServerInfo) error {
+func extOrPortAuthenticate(s io.ReadWriter, info *ServerInfo) error {
 	r := bufio.NewReader(s)
 
 	// Read auth types. 217-ext-orport-auth.txt section 4.1.
@@ -519,7 +519,7 @@ const (
 	extOrCmdDeny      = 0x1001
 )
 
-func extOrPortWriteCommand(s *net.TCPConn, cmd uint16, body []byte) error {
+func extOrPortWriteCommand(s io.Writer, cmd uint16, body []byte) error {
 	var buf bytes.Buffer
 	if len(body) > 65535 {
 		return errors.New("command exceeds maximum length of 65535")
@@ -546,22 +546,22 @@ func extOrPortWriteCommand(s *net.TCPConn, cmd uint16, body []byte) error {
 
 // Send a USERADDR command on s. See section 3.1.2.1 of
 // 196-transport-control-ports.txt.
-func extOrPortSendUserAddr(s *net.TCPConn, conn net.Conn) error {
+func extOrPortSendUserAddr(s io.Writer, conn net.Conn) error {
 	return extOrPortWriteCommand(s, extOrCmdUserAddr, []byte(conn.RemoteAddr().String()))
 }
 
 // Send a TRANSPORT command on s. See section 3.1.2.2 of
 // 196-transport-control-ports.txt.
-func extOrPortSendTransport(s *net.TCPConn, methodName string) error {
+func extOrPortSendTransport(s io.Writer, methodName string) error {
 	return extOrPortWriteCommand(s, extOrCmdTransport, []byte(methodName))
 }
 
 // Send a DONE command on s. See section 3.1 of 196-transport-control-ports.txt.
-func extOrPortSendDone(s *net.TCPConn) error {
+func extOrPortSendDone(s io.Writer) error {
 	return extOrPortWriteCommand(s, extOrCmdDone, []byte{})
 }
 
-func extOrPortRecvCommand(s *net.TCPConn) (cmd uint16, body []byte, err error) {
+func extOrPortRecvCommand(s io.Reader) (cmd uint16, body []byte, err error) {
 	var bodyLen uint16
 	data := make([]byte, 4)
 
@@ -590,7 +590,7 @@ func extOrPortRecvCommand(s *net.TCPConn) (cmd uint16, body []byte, err error) {
 // Send USERADDR and TRANSPORT commands followed by a DONE command. Wait for an
 // OKAY or DENY response command from the server. Returns nil if and only if
 // OKAY is received.
-func extOrPortSetup(s *net.TCPConn, conn net.Conn, methodName string) error {
+func extOrPortSetup(s io.ReadWriter, conn net.Conn, methodName string) error {
 	var err error
 
 	err = extOrPortSendUserAddr(s, conn)
