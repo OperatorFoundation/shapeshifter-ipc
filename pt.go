@@ -323,27 +323,23 @@ func getServerBindAddrs(methodNames []string) ([]BindAddr, error) {
 
 func readAuthCookie(f io.Reader) ([]byte, error) {
 	authCookieHeader := []byte("! Extended ORPort Auth Cookie !\x0a")
-	header := make([]byte, 32)
-	cookie := make([]byte, 32)
+	buf := make([]byte, 64)
 
-	n, err := io.ReadFull(f, header)
+	n, err := io.ReadFull(f, buf)
 	if err != nil {
-		return cookie, err
-	}
-	n, err = io.ReadFull(f, cookie)
-	if err != nil {
-		return cookie, err
+		return nil, err
 	}
 	// Check that the file ends here.
 	n, err = f.Read(make([]byte, 1))
 	if n != 0 {
-		return cookie, errors.New(fmt.Sprintf("file is longer than 64 bytes"))
+		return nil, errors.New(fmt.Sprintf("file is longer than 64 bytes"))
 	} else if err != io.EOF {
-		return cookie, errors.New(fmt.Sprintf("did not find EOF at end of file"))
+		return nil, errors.New(fmt.Sprintf("did not find EOF at end of file"))
 	}
-
+	header := buf[0:32]
+	cookie := buf[32:64]
 	if !bytes.Equal(header, authCookieHeader) {
-		return cookie, errors.New(fmt.Sprintf("missing auth cookie header"))
+		return nil, errors.New(fmt.Sprintf("missing auth cookie header"))
 	}
 
 	return cookie, nil
