@@ -1,5 +1,6 @@
 package pt
 
+import "bytes"
 import "os"
 import "testing"
 
@@ -76,6 +77,42 @@ func TestGetManagedTransportVer(t *testing.T) {
 		}
 		if output != test.expected {
 			t.Errorf("%q → %q (expected %q)", test.input, output, test.expected)
+		}
+	}
+}
+
+func TestReadAuthCookie(t *testing.T) {
+	badTests := [...][]byte{
+		[]byte(""),
+		// bad header
+		[]byte("! Impostor ORPort Auth Cookie !\x0a0123456789ABCDEF0123456789ABCDEF"),
+		// too short
+		[]byte("! Extended ORPort Auth Cookie !\x0a0123456789ABCDEF0123456789ABCDE"),
+		// too long
+		[]byte("! Extended ORPort Auth Cookie !\x0a0123456789ABCDEF0123456789ABCDEFX"),
+	}
+	goodTests := [...][]byte{
+		[]byte("! Extended ORPort Auth Cookie !\x0a0123456789ABCDEF0123456789ABCDEF"),
+	}
+
+	for _, input := range badTests {
+		var buf bytes.Buffer
+		buf.Write(input)
+		_, err := readAuthCookie(&buf)
+		if err == nil {
+			t.Errorf("%q unexpectedly succeeded", input)
+		}
+	}
+
+	for _, input := range goodTests {
+		var buf bytes.Buffer
+		buf.Write(input)
+		cookie, err := readAuthCookie(&buf)
+		if err != nil {
+			t.Errorf("%q unexpectedly returned an error: %s", input, err)
+		}
+		if !bytes.Equal(cookie, input[32:64]) {
+			t.Errorf("%q → %q (expected %q)", input, cookie, input[:32])
 		}
 	}
 }
