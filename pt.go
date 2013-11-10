@@ -321,18 +321,10 @@ func getServerBindAddrs(methodNames []string) ([]BindAddr, error) {
 	return result, nil
 }
 
-// Read and validate the contents of an auth cookie file. Returns the 32-byte
-// cookie. See section 4.2.1.2 of pt-spec.txt.
-func readAuthCookieFile(filename string) ([]byte, error) {
+func readAuthCookie(f io.Reader) ([]byte, error) {
 	authCookieHeader := []byte("! Extended ORPort Auth Cookie !\x0a")
 	header := make([]byte, 32)
 	cookie := make([]byte, 32)
-
-	f, err := os.Open(filename)
-	if err != nil {
-		return cookie, err
-	}
-	defer f.Close()
 
 	n, err := io.ReadFull(f, header)
 	if err != nil {
@@ -355,6 +347,18 @@ func readAuthCookieFile(filename string) ([]byte, error) {
 	}
 
 	return cookie, nil
+}
+
+// Read and validate the contents of an auth cookie file. Returns the 32-byte
+// cookie. See section 4.2.1.2 of pt-spec.txt.
+func readAuthCookieFile(filename string) ([]byte, error) {
+	f, err := os.Open(filename)
+	if err != nil {
+		return nil, err
+	}
+	defer f.Close()
+
+	return readAuthCookie(f)
 }
 
 // This structure is returned by ServerSetup. It consists of a list of
