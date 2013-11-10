@@ -270,15 +270,15 @@ func resolveAddr(addrStr string) (*net.TCPAddr, error) {
 	if portStr == "" {
 		return nil, net.InvalidAddrError(fmt.Sprintf("address string %q lacks a port part", addrStr))
 	}
-	ip, err := net.ResolveIPAddr("ip", ipStr)
-	if err != nil {
-		return nil, err
+	ip := net.ParseIP(ipStr)
+	if ip == nil {
+		return nil, net.InvalidAddrError(fmt.Sprintf("not an IP string: %q", ipStr))
 	}
 	port, err := net.LookupPort("tcp", portStr)
 	if err != nil {
 		return nil, err
 	}
-	return &net.TCPAddr{IP: ip.IP, Port: port, Zone: ip.Zone}, nil
+	return &net.TCPAddr{IP: ip, Port: port}, nil
 }
 
 // Return a new slice, the members of which are those members of addrs having a
