@@ -219,8 +219,8 @@ type ClientInfo struct {
 }
 
 // Check the client pluggable transports environments, emitting an error message
-// and exiting the program if any error is encountered. Returns a subset of
-// methodNames requested by Tor.
+// and returning a non-nil error if any error is encountered. Returns a subset
+// of methodNames requested by Tor.
 func ClientSetup(methodNames []string) (ClientInfo, error) {
 	var info ClientInfo
 
@@ -368,9 +368,9 @@ type ServerInfo struct {
 }
 
 // Check the server pluggable transports environments, emitting an error message
-// and exiting the program if any error is encountered. Resolves the various
-// requested bind addresses, the server ORPort and extended ORPort, and reads
-// the auth cookie file. Returns a ServerInfo struct.
+// and returning a non-nil error if any error is encountered. Resolves the
+// various requested bind addresses, the server ORPort and extended ORPort, and
+// reads the auth cookie file. Returns a ServerInfo struct.
 func ServerSetup(methodNames []string) (ServerInfo, error) {
 	var info ServerInfo
 
