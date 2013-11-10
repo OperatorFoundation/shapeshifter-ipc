@@ -246,20 +246,20 @@ type BindAddr struct {
 }
 
 // Resolve an address string into a net.TCPAddr.
-func resolveBindAddr(bindAddr string) (*net.TCPAddr, error) {
-	addr, err := net.ResolveTCPAddr("tcp", bindAddr)
+func resolveAddr(addrStr string) (*net.TCPAddr, error) {
+	addr, err := net.ResolveTCPAddr("tcp", addrStr)
 	if err == nil {
 		return addr, nil
 	}
 	// Before the fixing of bug #7011, tor doesn't put brackets around IPv6
 	// addresses. Split after the last colon, assuming it is a port
 	// separator, and try adding the brackets.
-	parts := strings.Split(bindAddr, ":")
+	parts := strings.Split(addrStr, ":")
 	if len(parts) <= 2 {
 		return nil, err
 	}
-	bindAddr = "[" + strings.Join(parts[:len(parts)-1], ":") + "]:" + parts[len(parts)-1]
-	return net.ResolveTCPAddr("tcp", bindAddr)
+	addrStr = "[" + strings.Join(parts[:len(parts)-1], ":") + "]:" + parts[len(parts)-1]
+	return net.ResolveTCPAddr("tcp", addrStr)
 }
 
 // Return a new slice, the members of which are those members of addrs having a
@@ -298,7 +298,7 @@ func getServerBindAddrs(methodNames []string) ([]BindAddr, error) {
 			return nil, EnvError(fmt.Sprintf("TOR_PT_SERVER_BINDADDR: %q: doesn't contain \"-\"", spec))
 		}
 		bindAddr.MethodName = parts[0]
-		addr, err := resolveBindAddr(parts[1])
+		addr, err := resolveAddr(parts[1])
 		if err != nil {
 			return nil, EnvError(fmt.Sprintf("TOR_PT_SERVER_BINDADDR: %q: %s", spec, err.Error()))
 		}
