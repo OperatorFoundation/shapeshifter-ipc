@@ -219,8 +219,8 @@ type ClientInfo struct {
 }
 
 // Check the client pluggable transports environments, emitting an error message
-// and returning a non-nil error if any error is encountered. Returns a subset
-// of methodNames requested by Tor.
+// and returning a non-nil error if any error is encountered. Returns a
+// ClientInfo struct.
 func ClientSetup(methodNames []string) (ClientInfo, error) {
 	var info ClientInfo
 
