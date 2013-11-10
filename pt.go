@@ -245,21 +245,40 @@ type BindAddr struct {
 	Addr       *net.TCPAddr
 }
 
-// Resolve an address string into a net.TCPAddr.
+// Resolve an address string into a net.TCPAddr. We are a bit more strict than
+// net.ResolveTCPAddr; we don't allow an empty host or port, and the host part
+// must be a literal IP address.
 func resolveAddr(addrStr string) (*net.TCPAddr, error) {
-	addr, err := net.ResolveTCPAddr("tcp", addrStr)
-	if err == nil {
-		return addr, nil
+	ipStr, portStr, err := net.SplitHostPort(addrStr)
+	if err != nil {
+		// Before the fixing of bug #7011, tor doesn't put brackets around IPv6
+		// addresses. Split after the last colon, assuming it is a port
+		// separator, and try adding the brackets.
+		parts := strings.Split(addrStr, ":")
+		if len(parts) <= 2 {
+			return nil, err
+		}
+		addrStr := "[" + strings.Join(parts[:len(parts)-1], ":") + "]:" + parts[len(parts)-1]
+		ipStr, portStr, err = net.SplitHostPort(addrStr)
 	}
-	// Before the fixing of bug #7011, tor doesn't put brackets around IPv6
-	// addresses. Split after the last colon, assuming it is a port
-	// separator, and try adding the brackets.
-	parts := strings.Split(addrStr, ":")
-	if len(parts) <= 2 {
+	if err != nil {
 		return nil, err
 	}
-	addrStr = "[" + strings.Join(parts[:len(parts)-1], ":") + "]:" + parts[len(parts)-1]
-	return net.ResolveTCPAddr("tcp", addrStr)
+	if ipStr == "" {
+		return nil, net.InvalidAddrError(fmt.Sprintf("address string %q lacks a host part", addrStr))
+	}
+	if portStr == "" {
+		return nil, net.InvalidAddrError(fmt.Sprintf("address string %q lacks a port part", addrStr))
+	}
+	ip, err := net.ResolveIPAddr("ip", ipStr)
+	if err != nil {
+		return nil, err
+	}
+	port, err := net.LookupPort("tcp", portStr)
+	if err != nil {
+		return nil, err
+	}
+	return &net.TCPAddr{IP: ip.IP, Port: port, Zone: ip.Zone}, nil
 }
 
 // Return a new slice, the members of which are those members of addrs having a
