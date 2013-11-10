@@ -75,7 +75,7 @@ func TestGetManagedTransportVer(t *testing.T) {
 		os.Setenv("TOR_PT_MANAGED_TRANSPORT_VER", test.input)
 		output, err := getManagedTransportVer()
 		if err != nil {
-			t.Errorf("%q unexpectedly returned an error", test.input)
+			t.Errorf("%q unexpectedly returned an error: %s", test.input, err)
 		}
 		if output != test.expected {
 			t.Errorf("%q → %q (expected %q)", test.input, output, test.expected)
