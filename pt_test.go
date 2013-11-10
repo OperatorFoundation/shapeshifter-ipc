@@ -1,8 +1,10 @@
 package pt
 
-import "bytes"
-import "os"
-import "testing"
+import (
+	"bytes"
+	"os"
+	"testing"
+)
 
 func stringIsSafe(s string) bool {
 	for _, c := range []byte(s) {
