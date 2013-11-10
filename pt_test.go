@@ -2,6 +2,7 @@ package pt
 
 import (
 	"bytes"
+	"net"
 	"os"
 	"sort"
 	"testing"
@@ -166,6 +167,48 @@ func TestGetClientTransports(t *testing.T) {
 		}
 		if !stringSetsEqual(output, test.expected) {
 			t.Errorf("%q %q → %q (expected %q)", test.envvar, test.methodNames, output, test.expected)
+		}
+	}
+}
+
+func TestResolveAddr(t *testing.T) {
+	badTests := [...]string{
+		"",
+		"1.2.3.4",
+		"1.2.3.4:",
+		"9999",
+		":9999",
+		"[1:2::3:4]",
+		"[1:2::3:4]:",
+		"[1::2::3:4]",
+		"1:2::3:4::9999",
+		"1:2:3:4::9999",
+		"localhost:9999",
+		"[localhost]:9999",
+	}
+	goodTests := [...]struct {
+		input    string
+		expected net.TCPAddr
+	}{
+		{"1.2.3.4:9999", net.TCPAddr{IP: net.ParseIP("1.2.3.4"), Port: 9999}},
+		{"[1:2::3:4]:9999", net.TCPAddr{IP: net.ParseIP("1:2::3:4"), Port: 9999}},
+		{"1:2::3:4:9999", net.TCPAddr{IP: net.ParseIP("1:2::3:4"), Port: 9999}},
+	}
+
+	for _, input := range badTests {
+		output, err := resolveAddr(input)
+		if err == nil {
+			t.Errorf("%q unexpectedly succeeded: %q", input, output)
+		}
+	}
+
+	for _, test := range goodTests {
+		output, err := resolveAddr(test.input)
+		if err != nil {
+			t.Errorf("%q unexpectedly returned an error: %s", test.input, err)
+		}
+		if !output.IP.Equal(test.expected.IP) || output.Port != test.expected.Port {
+			t.Errorf("%q → %q (expected %q)", test.input, output, test.expected)
 		}
 	}
 }
