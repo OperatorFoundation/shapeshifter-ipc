@@ -338,7 +338,7 @@ func readAuthCookie(f io.Reader) ([]byte, error) {
 	}
 	header := buf[0:32]
 	cookie := buf[32:64]
-	if !bytes.Equal(header, authCookieHeader) {
+	if subtle.ConstantTimeCompare(header, authCookieHeader) != 1 {
 		return nil, errors.New(fmt.Sprintf("missing auth cookie header"))
 	}
 
