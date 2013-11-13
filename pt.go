@@ -298,7 +298,7 @@ func filterBindAddrs(addrs []BindAddr, methodNames []string) []BindAddr {
 	return result
 }
 
-// Return a map from method names to bind addresses. The map is the contents of
+// Return an array of BindAddrs, those being the contents of
 // TOR_PT_SERVER_BINDADDR, with keys filtered by TOR_PT_SERVER_TRANSPORTS, and
 // further filtered by the methods in methodNames.
 func getServerBindAddrs(methodNames []string) ([]BindAddr, error) {
