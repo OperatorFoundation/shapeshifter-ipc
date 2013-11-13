@@ -81,13 +81,13 @@ func main() {
 	}
 
 	listeners := make([]net.Listener, 0)
-	for _, bindAddr := range ptInfo.BindAddrs {
-		ln, err := startListener(bindAddr.Addr)
+	for _, bindaddr := range ptInfo.Bindaddrs {
+		ln, err := startListener(bindaddr.Addr)
 		if err != nil {
-			pt.SmethodError(bindAddr.MethodName, err.Error())
+			pt.SmethodError(bindaddr.MethodName, err.Error())
 			continue
 		}
-		pt.Smethod(bindAddr.MethodName, ln.Addr())
+		pt.Smethod(bindaddr.MethodName, ln.Addr())
 		listeners = append(listeners, ln)
 	}
 	pt.SmethodsDone()

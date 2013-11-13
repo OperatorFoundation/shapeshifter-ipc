@@ -28,13 +28,13 @@
 // if err != nil {
 // 	os.Exit(1)
 // }
-// for _, bindAddr := range ptInfo.BindAddrs {
-// 	ln, err := startListener(bindAddr.Addr, bindAddr.MethodName)
+// for _, bindaddr := range ptInfo.Bindaddrs {
+// 	ln, err := startListener(bindaddr.Addr, bindaddr.MethodName)
 // 	if err != nil {
-// 		pt.SmethodError(bindAddr.MethodName, err.Error())
+// 		pt.SmethodError(bindaddr.MethodName, err.Error())
 // 		continue
 // 	}
-// 	pt.Smethod(bindAddr.MethodName, ln.Addr())
+// 	pt.Smethod(bindaddr.MethodName, ln.Addr())
 // }
 // pt.SmethodsDone()
 // func handler(conn net.Conn, methodName string) {
@@ -240,7 +240,7 @@ func ClientSetup(methodNames []string) (ClientInfo, error) {
 
 // A combination of a method name and an address, as extracted from
 // TOR_PT_SERVER_BINDADDR.
-type BindAddr struct {
+type Bindaddr struct {
 	MethodName string
 	Addr       *net.TCPAddr
 }
@@ -283,8 +283,8 @@ func resolveAddr(addrStr string) (*net.TCPAddr, error) {
 
 // Return a new slice, the members of which are those members of addrs having a
 // MethodName in methodNames.
-func filterBindAddrs(addrs []BindAddr, methodNames []string) []BindAddr {
-	var result []BindAddr
+func filterBindaddrs(addrs []Bindaddr, methodNames []string) []Bindaddr {
+	var result []Bindaddr
 
 	for _, ba := range addrs {
 		for _, methodName := range methodNames {
@@ -298,31 +298,31 @@ func filterBindAddrs(addrs []BindAddr, methodNames []string) []BindAddr {
 	return result
 }
 
-// Return an array of BindAddrs, those being the contents of
+// Return an array of Bindaddrs, those being the contents of
 // TOR_PT_SERVER_BINDADDR, with keys filtered by TOR_PT_SERVER_TRANSPORTS, and
 // further filtered by the methods in methodNames.
-func getServerBindAddrs(methodNames []string) ([]BindAddr, error) {
-	var result []BindAddr
+func getServerBindaddrs(methodNames []string) ([]Bindaddr, error) {
+	var result []Bindaddr
 
 	// Get the list of all requested bindaddrs.
-	serverBindAddr, err := getenvRequired("TOR_PT_SERVER_BINDADDR")
+	serverBindaddr, err := getenvRequired("TOR_PT_SERVER_BINDADDR")
 	if err != nil {
 		return nil, err
 	}
-	for _, spec := range strings.Split(serverBindAddr, ",") {
-		var bindAddr BindAddr
+	for _, spec := range strings.Split(serverBindaddr, ",") {
+		var bindaddr Bindaddr
 
 		parts := strings.SplitN(spec, "-", 2)
 		if len(parts) != 2 {
 			return nil, EnvError(fmt.Sprintf("TOR_PT_SERVER_BINDADDR: %q: doesn't contain \"-\"", spec))
 		}
-		bindAddr.MethodName = parts[0]
+		bindaddr.MethodName = parts[0]
 		addr, err := resolveAddr(parts[1])
 		if err != nil {
 			return nil, EnvError(fmt.Sprintf("TOR_PT_SERVER_BINDADDR: %q: %s", spec, err.Error()))
 		}
-		bindAddr.Addr = addr
-		result = append(result, bindAddr)
+		bindaddr.Addr = addr
+		result = append(result, bindaddr)
 	}
 
 	// Filter by TOR_PT_SERVER_TRANSPORTS.
@@ -331,11 +331,11 @@ func getServerBindAddrs(methodNames []string) ([]BindAddr, error) {
 		return nil, err
 	}
 	if serverTransports != "*" {
-		result = filterBindAddrs(result, strings.Split(serverTransports, ","))
+		result = filterBindaddrs(result, strings.Split(serverTransports, ","))
 	}
 
 	// Finally filter by what we understand.
-	result = filterBindAddrs(result, methodNames)
+	result = filterBindaddrs(result, methodNames)
 
 	return result, nil
 }
@@ -377,10 +377,10 @@ func readAuthCookieFile(filename string) ([]byte, error) {
 }
 
 // This structure is returned by ServerSetup. It consists of a list of
-// BindAddrs, an address for the ORPort, an address for the extended ORPort (if
+// Bindaddrs, an address for the ORPort, an address for the extended ORPort (if
 // any), and an authentication cookie (if any).
 type ServerInfo struct {
-	BindAddrs      []BindAddr
+	Bindaddrs      []Bindaddr
 	OrAddr         *net.TCPAddr
 	ExtendedOrAddr *net.TCPAddr
 	AuthCookie     []byte
@@ -408,7 +408,7 @@ func ServerSetup(methodNames []string) (ServerInfo, error) {
 		return info, EnvError(fmt.Sprintf("cannot resolve TOR_PT_ORPORT %q: %s", orPort, err.Error()))
 	}
 
-	info.BindAddrs, err = getServerBindAddrs(methodNames)
+	info.Bindaddrs, err = getServerBindaddrs(methodNames)
 	if err != nil {
 		return info, err
 	}
