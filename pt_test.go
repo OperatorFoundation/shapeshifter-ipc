@@ -69,7 +69,7 @@ func TestGetManagedTransportVer(t *testing.T) {
 		os.Setenv("TOR_PT_MANAGED_TRANSPORT_VER", input)
 		_, err := getManagedTransportVer()
 		if err == nil {
-			t.Errorf("%q unexpectedly succeeded", input)
+			t.Errorf("TOR_PT_MANAGED_TRANSPORT_VER=%q unexpectedly succeeded", input)
 		}
 	}
 
@@ -77,10 +77,10 @@ func TestGetManagedTransportVer(t *testing.T) {
 		os.Setenv("TOR_PT_MANAGED_TRANSPORT_VER", test.input)
 		output, err := getManagedTransportVer()
 		if err != nil {
-			t.Errorf("%q unexpectedly returned an error: %s", test.input, err)
+			t.Errorf("TOR_PT_MANAGED_TRANSPORT_VER=%q unexpectedly returned an error: %s", test.input, err)
 		}
 		if output != test.expected {
-			t.Errorf("%q → %q (expected %q)", test.input, output, test.expected)
+			t.Errorf("TOR_PT_MANAGED_TRANSPORT_VER=%q → %q (expected %q)", test.input, output, test.expected)
 		}
 	}
 }
@@ -105,9 +105,9 @@ func stringSetsEqual(a, b []string) bool {
 
 func TestGetClientTransports(t *testing.T) {
 	tests := [...]struct {
-		envvar      string
-		methodNames []string
-		expected    []string
+		ptServerClientTransports string
+		methodNames              []string
+		expected                 []string
 	}{
 		{
 			"*",
@@ -160,13 +160,15 @@ func TestGetClientTransports(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		os.Setenv("TOR_PT_CLIENT_TRANSPORTS", test.envvar)
+		os.Setenv("TOR_PT_CLIENT_TRANSPORTS", test.ptServerClientTransports)
 		output, err := getClientTransports(test.methodNames)
 		if err != nil {
-			t.Errorf("%q unexpectedly returned an error: %s", test.envvar, err)
+			t.Errorf("TOR_PT_CLIENT_TRANSPORTS=%q unexpectedly returned an error: %s",
+				test.ptServerClientTransports, err)
 		}
 		if !stringSetsEqual(output, test.expected) {
-			t.Errorf("%q %q → %q (expected %q)", test.envvar, test.methodNames, output, test.expected)
+			t.Errorf("TOR_PT_CLIENT_TRANSPORTS=%q %q → %q (expected %q)",
+				test.ptServerClientTransports, test.methodNames, output, test.expected)
 		}
 	}
 }
