@@ -90,6 +90,8 @@ func TestGetManagedTransportVer(t *testing.T) {
 func stringSetsEqual(a, b []string) bool {
 	ac := make([]string, len(a))
 	bc := make([]string, len(b))
+	copy(ac, a)
+	copy(bc, b)
 	sort.Strings(ac)
 	sort.Strings(bc)
 	if len(ac) != len(bc) {
