@@ -403,7 +403,7 @@ func ServerSetup(methodNames []string) (ServerInfo, error) {
 	if err != nil {
 		return info, err
 	}
-	info.OrAddr, err = net.ResolveTCPAddr("tcp", orPort)
+	info.OrAddr, err = resolveAddr(orPort)
 	if err != nil {
 		return info, EnvError(fmt.Sprintf("cannot resolve TOR_PT_ORPORT %q: %s", orPort, err.Error()))
 	}
@@ -415,7 +415,7 @@ func ServerSetup(methodNames []string) (ServerInfo, error) {
 
 	var extendedOrPort = getenv("TOR_PT_EXTENDED_SERVER_PORT")
 	if extendedOrPort != "" {
-		info.ExtendedOrAddr, err = net.ResolveTCPAddr("tcp", extendedOrPort)
+		info.ExtendedOrAddr, err = resolveAddr(extendedOrPort)
 		if err != nil {
 			return info, EnvError(fmt.Sprintf("cannot resolve TOR_PT_EXTENDED_SERVER_PORT %q: %s", extendedOrPort, err.Error()))
 		}
