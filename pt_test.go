@@ -221,6 +221,115 @@ func TestResolveAddr(t *testing.T) {
 	}
 }
 
+func bindaddrSliceContains(s []Bindaddr, v Bindaddr) bool {
+	for _, sv := range s {
+		if sv.MethodName == v.MethodName && tcpAddrsEqual(sv.Addr, v.Addr) {
+			return true
+		}
+	}
+	return false
+}
+
+func bindaddrSetsEqual(a, b []Bindaddr) bool {
+	for _, v := range a {
+		if !bindaddrSliceContains(b, v) {
+			return false
+		}
+	}
+	for _, v := range b {
+		if !bindaddrSliceContains(a, v) {
+			return false
+		}
+	}
+	return true
+}
+
+func TestGetServerBindaddrs(t *testing.T) {
+	badTests := [...]struct {
+		ptServerBindaddr   string
+		ptServerTransports string
+		methodNames        []string
+	}{
+		{
+			"xxx",
+			"xxx",
+			[]string{},
+		},
+		{
+			"alpha-1.2.3.4",
+			"alpha",
+			[]string{"alpha", "beta", "gamma"},
+		},
+	}
+	goodTests := [...]struct {
+		ptServerBindaddr   string
+		ptServerTransports string
+		methodNames        []string
+		expected           []Bindaddr
+	}{
+		{
+			"alpha-1.2.3.4:1111,beta-[1:2::3:4]:2222",
+			"alpha,beta,gamma",
+			[]string{"alpha", "beta"},
+			[]Bindaddr{
+				{"alpha", &net.TCPAddr{IP: net.ParseIP("1.2.3.4"), Port: 1111}},
+				{"beta", &net.TCPAddr{IP: net.ParseIP("1:2::3:4"), Port: 2222}},
+			},
+		},
+		{
+			"alpha-1.2.3.4:1111",
+			"xxx",
+			[]string{"alpha", "beta", "gamma"},
+			[]Bindaddr{},
+		},
+		{
+			"alpha-1.2.3.4:1111",
+			"alpha,beta,gamma",
+			[]string{},
+			[]Bindaddr{},
+		},
+		{
+			"alpha-1.2.3.4:1111,beta-[1:2::3:4]:2222",
+			"*",
+			[]string{"alpha", "beta"},
+			[]Bindaddr{
+				{"alpha", &net.TCPAddr{IP: net.ParseIP("1.2.3.4"), Port: 1111}},
+				{"beta", &net.TCPAddr{IP: net.ParseIP("1:2::3:4"), Port: 2222}},
+			},
+		},
+	}
+
+	os.Clearenv()
+	_, err := getServerBindaddrs([]string{"alpha", "beta", "gamma"})
+	if err == nil {
+		t.Errorf("empty environment unexpectedly succeeded")
+	}
+
+	for _, test := range badTests {
+		os.Setenv("TOR_PT_SERVER_BINDADDR", test.ptServerBindaddr)
+		os.Setenv("TOR_PT_SERVER_TRANSPORTS", test.ptServerTransports)
+		_, err := getServerBindaddrs(test.methodNames)
+		if err == nil {
+			t.Errorf("TOR_PT_SERVER_BINDADDR=%q TOR_PT_SERVER_TRANSPORTS=%q %q unexpectedly succeeded",
+				test.ptServerBindaddr, test.ptServerTransports, test.methodNames)
+		}
+	}
+
+	for _, test := range goodTests {
+		os.Setenv("TOR_PT_SERVER_BINDADDR", test.ptServerBindaddr)
+		os.Setenv("TOR_PT_SERVER_TRANSPORTS", test.ptServerTransports)
+		output, err := getServerBindaddrs(test.methodNames)
+		if err != nil {
+			t.Errorf("TOR_PT_SERVER_BINDADDR=%q TOR_PT_SERVER_TRANSPORTS=%q %q unexpectedly returned an error: %s",
+				test.ptServerBindaddr, test.ptServerTransports, test.methodNames, err)
+		}
+		if !bindaddrSetsEqual(output, test.expected) {
+			t.Errorf("TOR_PT_SERVER_BINDADDR=%q TOR_PT_SERVER_TRANSPORTS=%q %q → %q (expected %q)",
+				test.ptServerBindaddr, test.ptServerTransports, test.methodNames, output, test.expected)
+		}
+	}
+}
+
 func TestReadAuthCookie(t *testing.T) {
 	badTests := [...][]byte{
 		[]byte(""),
