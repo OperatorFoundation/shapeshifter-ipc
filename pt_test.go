@@ -105,6 +105,10 @@ func stringSetsEqual(a, b []string) bool {
 	return true
 }
 
+func tcpAddrsEqual(a, b *net.TCPAddr) bool {
+	return a.IP.Equal(b.IP) && a.Port == b.Port
+}
+
 func TestGetClientTransports(t *testing.T) {
 	tests := [...]struct {
 		ptServerClientTransports string
@@ -211,7 +215,7 @@ func TestResolveAddr(t *testing.T) {
 		if err != nil {
 			t.Errorf("%q unexpectedly returned an error: %s", test.input, err)
 		}
-		if !output.IP.Equal(test.expected.IP) || output.Port != test.expected.Port {
+		if !tcpAddrsEqual(output, &test.expected) {
 			t.Errorf("%q → %q (expected %q)", test.input, output, test.expected)
 		}
 	}
