@@ -64,6 +64,40 @@ import (
 	"time"
 )
 
+// This type wraps a Write method and calls Sync after each Write.
+type syncWriter struct {
+	*os.File
+}
+
+// Call File.Write and then Sync. An error is returned if either operation
+// returns an error.
+func (w syncWriter) Write(p []byte) (n int, err error) {
+	n, err = w.File.Write(p)
+	if err != nil {
+		return
+	}
+	err = w.Sync()
+	return
+}
+
+// Writer to which pluggable-transport negotiation messages are written. It
+// defaults to a Writer that writes to os.Stdout and calls Sync after each
+// write.
+//
+// You may, for example, log pluggable-transport messages by defining a Writer
+// that logs what is written to it:
+// 	type logWriteWrapper struct {
+// 		io.Writer
+// 	}
+//
+// 	func (w logWriteWrapper) Write(p []byte) (int, error) {
+// 		log.Print(string(p))
+// 		return w.Writer.Write(p)
+// 	}
+// and then redefining Stdout:
+// 	pt.Stdout = logWriteWrapper{pt.Stdout}
+var Stdout io.Writer = syncWriter{os.Stdout}
+
 // Represents an error that can happen during negotiation, for example
 // ENV-ERROR. When an error occurs, we print it to stdout and also pass it up
 // the return chain.
@@ -117,11 +151,10 @@ func formatLine(keyword string, v ...string) string {
 	return buf.String()
 }
 
-// Print a pluggable transports protocol line to stdout. The line consists of an
+// Print a pluggable transports protocol line to Stdout. The line consists of an
 // unescaped keyword, followed by any number of escaped strings.
 func Line(keyword string, v ...string) {
-	fmt.Println(formatLine(keyword, v...))
-	os.Stdout.Sync()
+	fmt.Fprintln(Stdout, formatLine(keyword, v...))
 }
 
 // Emit and return the given error as a ptErr.
