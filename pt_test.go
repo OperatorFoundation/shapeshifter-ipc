@@ -2,6 +2,7 @@ package pt
 
 import (
 	"bytes"
+	"io/ioutil"
 	"net"
 	"os"
 	"sort"
@@ -58,6 +59,8 @@ func TestGetManagedTransportVer(t *testing.T) {
 		{"1,2", "1"},
 		{"2,1", "1"},
 	}
+
+	Stdout = ioutil.Discard
 
 	os.Clearenv()
 	_, err := getManagedTransportVer()
@@ -158,6 +161,8 @@ func TestGetClientTransports(t *testing.T) {
 			[]string{},
 		},
 	}
+
+	Stdout = ioutil.Discard
 
 	os.Clearenv()
 	_, err := getClientTransports([]string{"alpha", "beta", "gamma"})
@@ -298,6 +303,8 @@ func TestGetServerBindaddrs(t *testing.T) {
 			},
 		},
 	}
+
+	Stdout = ioutil.Discard
 
 	os.Clearenv()
 	_, err := getServerBindaddrs([]string{"alpha", "beta", "gamma"})
