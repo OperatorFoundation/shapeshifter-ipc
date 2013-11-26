@@ -1,5 +1,7 @@
-// SOCKS4a server library.
-
+// Package socks implements a SOCKS4a server sufficient for a Tor client
+// transport plugin.
+//
+// http://ftp.icm.edu.pl/packages/socks/socks4/SOCKS4.protocol
 package socks
 
 import (
@@ -22,6 +24,21 @@ const (
 // requested destination string. If the callback returns an error, sends a SOCKS
 // request failed message. Otherwise, sends a SOCKS request granted message for
 // the destination address returned by the callback.
+// 	var remote net.Conn
+// 	err := socks.AwaitSocks4aConnect(local.(*net.TCPConn), func(dest string) (*net.TCPAddr, error) {
+// 		var err error
+// 		// set remote in outer function environment
+// 		remote, err = net.Dial("tcp", dest)
+// 		if err != nil {
+// 			return nil, err
+// 		}
+// 		return remote.RemoteAddr().(*net.TCPAddr), nil
+// 	})
+// 	if err != nil {
+// 		return err
+// 	}
+// 	defer remote.Close()
+// 	copyLoop(local, remote)
 func AwaitSocks4aConnect(conn *net.TCPConn, connect func(string) (*net.TCPAddr, error)) error {
 	dest, err := readSocks4aConnect(conn)
 	if err != nil {

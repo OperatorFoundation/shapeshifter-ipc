@@ -1,9 +1,14 @@
+// Dummy no-op pluggable transport server. Works only as a managed proxy.
+//
 // Usage (in torrc):
-//   BridgeRelay 1
-//   ORPort 9001
-//   ExtORPort 6669
-//   ServerTransportPlugin dummy exec dummy-server
-
+// 	BridgeRelay 1
+// 	ORPort 9001
+// 	ExtORPort 6669
+// 	ServerTransportPlugin dummy exec dummy-server
+//
+// Because the dummy transport doesn't do anything to the traffic, you can
+// connect to it with any ordinary Tor client; you don't have to use
+// dummy-client.
 package main
 
 import (

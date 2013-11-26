@@ -1,50 +1,53 @@
-// Tor pluggable transports library.
+// Package pt implements the Tor pluggable transports specification.
 //
 // Sample client usage:
-//
-// import "git.torproject.org/pluggable-transports/goptlib.git"
-// var ptInfo pt.ClientInfo
-// var err error
-// ptInfo, err := pt.ClientSetup([]string{"foo"})
-// if err != nil {
-// 	os.Exit(1)
-// }
-// for _, methodName := range ptInfo.MethodNames {
-// 	ln, err := startSocksListener()
+// 	var ptInfo pt.ClientInfo
+// 	var err error
+// 	ptInfo, err = pt.ClientSetup([]string{"foo"})
 // 	if err != nil {
-// 		pt.CmethodError(methodName, err.Error())
-// 		continue
+// 		os.Exit(1)
 // 	}
-// 	pt.Cmethod(methodName, "socks4", ln.Addr())
-// }
-// pt.CmethodsDone()
+// 	for _, methodName := range ptInfo.MethodNames {
+// 		ln, err := startSocksListener()
+// 		if err != nil {
+// 			pt.CmethodError(methodName, err.Error())
+// 			continue
+// 		}
+// 		pt.Cmethod(methodName, "socks4", ln.Addr())
+// 	}
+// 	pt.CmethodsDone()
+// See the socks package for help with writing a SOCKS listener.
 //
 // Sample server usage:
+// 	func handler(conn net.Conn) {
+// 		or, err := pt.ConnectOr(&ptInfo, conn, "foo")
+// 		if err != nil {
+// 			return
+// 		}
+// 		// do something with or and conn
+// 	}
+// 	...
+// 	var ptInfo pt.ServerInfo
+// 	var err error
+// 	ptInfo, err = pt.ServerSetup([]string{"foo"})
+// 	if err != nil {
+//	 	os.Exit(1)
+// 	}
+// 	for _, bindaddr := range ptInfo.Bindaddrs {
+// 		ln, err := startListener(bindaddr.Addr, bindaddr.MethodName)
+// 		if err != nil {
+// 			pt.SmethodError(bindaddr.MethodName, err.Error())
+// 			continue
+// 		}
+// 		pt.Smethod(bindaddr.MethodName, ln.Addr())
+// 	}
+// 	pt.SmethodsDone()
 //
-// import "git.torproject.org/pluggable-transports/goptlib.git"
-// var ptInfo pt.ServerInfo
-// var err error
-// ptInfo, err = pt.ServerSetup([]string{"foo", "bar"})
-// if err != nil {
-// 	os.Exit(1)
-// }
-// for _, bindaddr := range ptInfo.Bindaddrs {
-// 	ln, err := startListener(bindaddr.Addr, bindaddr.MethodName)
-// 	if err != nil {
-// 		pt.SmethodError(bindaddr.MethodName, err.Error())
-// 		continue
-// 	}
-// 	pt.Smethod(bindaddr.MethodName, ln.Addr())
-// }
-// pt.SmethodsDone()
-// func handler(conn net.Conn, methodName string) {
-// 	or, err := pt.ConnectOr(&ptInfo, conn, methodName)
-// 	if err != nil {
-// 		return
-// 	}
-// 	// Do something with or and conn.
-// }
-
+// Tor pluggable transports specification:
+// https://gitweb.torproject.org/torspec.git/blob/HEAD:/pt-spec.txt.
+//
+// Extended ORPort Authentication:
+// https://gitweb.torproject.org/torspec.git/blob/HEAD:/proposals/217-ext-orport-auth.txt.
 package pt
 
 import (
