@@ -471,6 +471,35 @@ func TestExtOrSendUserAddr(t *testing.T) {
 	}
 }
 
+func TestExtOrPortSendTransport(t *testing.T) {
+	tests := [...]struct {
+		methodName string
+		expected []byte
+	}{
+		{"", []byte("\x00\x02\x00\x00")},
+		{"a", []byte("\x00\x02\x00\x01a")},
+		{"alpha", []byte("\x00\x02\x00\x05alpha")},
+	}
+
+	for _, test := range tests {
+		var buf bytes.Buffer
+		err := extOrPortSendTransport(&buf, test.methodName)
+		if err != nil {
+			t.Errorf("%q unexpectedly returned an error: %s", test.methodName, err)
+		}
+		p := make([]byte, 1024)
+		n, err := buf.Read(p)
+		if err != nil {
+			t.Fatal(err)
+		}
+		output := p[:n]
+		if !bytes.Equal(output, test.expected) {
+			t.Errorf("%q → %s (expected %s)", test.methodName,
+				fmtBytes(output), fmtBytes(test.expected))
+		}
+	}
+}
+
 func TestExtOrPortSendDone(t *testing.T) {
 	expected := []byte("\x00\x00\x00\x00")
 
