@@ -577,7 +577,7 @@ const (
 	extOrCmdDeny      = 0x1001
 )
 
-func extOrPortWriteCommand(s io.Writer, cmd uint16, body []byte) error {
+func extOrPortSendCommand(s io.Writer, cmd uint16, body []byte) error {
 	var buf bytes.Buffer
 	if len(body) > 65535 {
 		return errors.New("command exceeds maximum length of 65535")
@@ -605,18 +605,18 @@ func extOrPortWriteCommand(s io.Writer, cmd uint16, body []byte) error {
 // Send a USERADDR command on s. See section 3.1.2.1 of
 // 196-transport-control-ports.txt.
 func extOrPortSendUserAddr(s io.Writer, conn net.Conn) error {
-	return extOrPortWriteCommand(s, extOrCmdUserAddr, []byte(conn.RemoteAddr().String()))
+	return extOrPortSendCommand(s, extOrCmdUserAddr, []byte(conn.RemoteAddr().String()))
 }
 
 // Send a TRANSPORT command on s. See section 3.1.2.2 of
 // 196-transport-control-ports.txt.
 func extOrPortSendTransport(s io.Writer, methodName string) error {
-	return extOrPortWriteCommand(s, extOrCmdTransport, []byte(methodName))
+	return extOrPortSendCommand(s, extOrCmdTransport, []byte(methodName))
 }
 
 // Send a DONE command on s. See section 3.1 of 196-transport-control-ports.txt.
 func extOrPortSendDone(s io.Writer) error {
-	return extOrPortWriteCommand(s, extOrCmdDone, []byte{})
+	return extOrPortSendCommand(s, extOrCmdDone, []byte{})
 }
 
 func extOrPortRecvCommand(s io.Reader) (cmd uint16, body []byte, err error) {
