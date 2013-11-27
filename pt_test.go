@@ -470,3 +470,22 @@ func TestExtOrSendUserAddr(t *testing.T) {
 		}
 	}
 }
+
+func TestExtOrPortSendDone(t *testing.T) {
+	expected := []byte("\x00\x00\x00\x00")
+
+	var buf bytes.Buffer
+	err := extOrPortSendDone(&buf)
+	if err != nil {
+		t.Errorf("unexpectedly returned an error: %s", err)
+	}
+	p := make([]byte, 1024)
+	n, err := buf.Read(p)
+	if err != nil {
+		t.Fatal(err)
+	}
+	output := p[:n]
+	if !bytes.Equal(output, expected) {
+		t.Errorf("→ %s (expected %s)", fmtBytes(output), fmtBytes(expected))
+	}
+}
