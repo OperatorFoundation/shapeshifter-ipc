@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/binary"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"net"
 	"os"
@@ -516,5 +517,73 @@ func TestExtOrPortSendDone(t *testing.T) {
 	output := p[:n]
 	if !bytes.Equal(output, expected) {
 		t.Errorf("→ %s (expected %s)", fmtBytes(output), fmtBytes(expected))
+	}
+}
+
+func TestExtOrPortRecvCommand(t *testing.T) {
+	badTests := [...][]byte{
+		[]byte(""),
+		[]byte("\x12"),
+		[]byte("\x12\x34"),
+		[]byte("\x12\x34\x00"),
+		[]byte("\x12\x34\x00\x01"),
+	}
+	goodTests := [...]struct {
+		input []byte
+		cmd uint16
+		body []byte
+		leftover []byte
+	}{
+		{
+			[]byte("\x12\x34\x00\x00"),
+			0x1234, []byte(""), []byte(""),
+		},
+		{
+			[]byte("\x12\x34\x00\x00more"),
+			0x1234, []byte(""), []byte("more"),
+		},
+		{
+			[]byte("\x12\x34\x00\x04body"),
+			0x1234, []byte("body"), []byte(""),
+		},
+		{
+			[]byte("\x12\x34\x00\x04bodymore"),
+			0x1234, []byte("body"), []byte("more"),
+		},
+	}
+
+	for _, input := range badTests {
+		var buf bytes.Buffer
+		buf.Write(input)
+		_, _, err := extOrPortRecvCommand(&buf)
+		if err == nil {
+			t.Errorf("%q unexpectedly succeeded", fmtBytes(input))
+		}
+	}
+
+	for _, test := range goodTests {
+		var buf bytes.Buffer
+		buf.Write(test.input)
+		cmd, body, err := extOrPortRecvCommand(&buf)
+		if err != nil {
+			t.Errorf("%s unexpectedly returned an error: %s", fmtBytes(test.input), err)
+		}
+		if cmd != test.cmd {
+			t.Errorf("%s → cmd 0x%04x (expected 0x%04x)", fmtBytes(test.input), cmd, test.cmd)
+		}
+		if !bytes.Equal(body, test.body) {
+			t.Errorf("%s → body %s (expected %s)", fmtBytes(test.input),
+				fmtBytes(body), fmtBytes(test.body))
+		}
+		p := make([]byte, 1024)
+		n, err := buf.Read(p)
+		if err != nil && err != io.EOF {
+			t.Fatal(err)
+		}
+		leftover := p[:n]
+		if !bytes.Equal(leftover, test.leftover) {
+			t.Errorf("%s → leftover %s (expected %s)", fmtBytes(test.input),
+				fmtBytes(leftover), fmtBytes(test.leftover))
+		}
 	}
 }
