@@ -2,6 +2,7 @@ package pt
 
 import (
 	"bytes"
+	"fmt"
 	"io/ioutil"
 	"net"
 	"os"
@@ -369,6 +370,64 @@ func TestReadAuthCookie(t *testing.T) {
 		}
 		if !bytes.Equal(cookie, input[32:64]) {
 			t.Errorf("%q → %q (expected %q)", input, cookie, input[:32])
+		}
+	}
+}
+
+// Elide a byte slice in case it's really long.
+func fmtBytes(s []byte) string {
+	if len(s) > 100 {
+		return fmt.Sprintf("%q...(%d bytes)", s[:5], len(s))
+	} else {
+		return fmt.Sprintf("%q", s)
+	}
+}
+
+func TestExtOrSendCommand(t *testing.T) {
+	badTests := [...]struct {
+		cmd  uint16
+		body []byte
+	}{
+		{0x0, make([]byte, 65536)},
+		{0x1234, make([]byte, 65536)},
+	}
+	longBody := [65535 + 2 + 2]byte{0x12, 0x34, 0xff, 0xff}
+	goodTests := [...]struct {
+		cmd      uint16
+		body     []byte
+		expected []byte
+	}{
+		{0x0, []byte(""), []byte("\x00\x00\x00\x00")},
+		{0x5, []byte(""), []byte("\x00\x05\x00\x00")},
+		{0xfffe, []byte(""), []byte("\xff\xfe\x00\x00")},
+		{0xffff, []byte(""), []byte("\xff\xff\x00\x00")},
+		{0x1234, []byte("hello"), []byte("\x12\x34\x00\x05hello")},
+		{0x1234, make([]byte, 65535), longBody[:]},
+	}
+
+	for _, test := range badTests {
+		var buf bytes.Buffer
+		err := extOrPortSendCommand(&buf, test.cmd, test.body)
+		if err == nil {
+			t.Errorf("0x%04x %s unexpectedly succeeded", test.cmd, fmtBytes(test.body))
+		}
+	}
+
+	for _, test := range goodTests {
+		var buf bytes.Buffer
+		err := extOrPortSendCommand(&buf, test.cmd, test.body)
+		if err != nil {
+			t.Errorf("0x%04x %s unexpectedly returned an error: %s", test.cmd, fmtBytes(test.body), err)
+		}
+		p := make([]byte, 65535+2+2)
+		n, err := buf.Read(p)
+		if err != nil {
+			t.Fatal(err)
+		}
+		output := p[:n]
+		if !bytes.Equal(output, test.expected) {
+			t.Errorf("0x%04x %s → %s (expected %s)", test.cmd, fmtBytes(test.body),
+				fmtBytes(output), fmtBytes(test.expected))
 		}
 	}
 }
