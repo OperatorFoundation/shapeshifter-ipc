@@ -580,7 +580,7 @@ const (
 func extOrPortSendCommand(s io.Writer, cmd uint16, body []byte) error {
 	var buf bytes.Buffer
 	if len(body) > 65535 {
-		return errors.New("command exceeds maximum length of 65535")
+		return errors.New(fmt.Sprintf("body length %d exceeds maximum of 65535", len(body)))
 	}
 	err := binary.Write(&buf, binary.BigEndian, cmd)
 	if err != nil {
