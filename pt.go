@@ -604,8 +604,8 @@ func extOrPortSendCommand(s io.Writer, cmd uint16, body []byte) error {
 
 // Send a USERADDR command on s. See section 3.1.2.1 of
 // 196-transport-control-ports.txt.
-func extOrPortSendUserAddr(s io.Writer, conn net.Conn) error {
-	return extOrPortSendCommand(s, extOrCmdUserAddr, []byte(conn.RemoteAddr().String()))
+func extOrPortSendUserAddr(s io.Writer, addr net.Addr) error {
+	return extOrPortSendCommand(s, extOrCmdUserAddr, []byte(addr.String()))
 }
 
 // Send a TRANSPORT command on s. See section 3.1.2.2 of
@@ -651,7 +651,7 @@ func extOrPortRecvCommand(s io.Reader) (cmd uint16, body []byte, err error) {
 func extOrPortSetup(s io.ReadWriter, conn net.Conn, methodName string) error {
 	var err error
 
-	err = extOrPortSendUserAddr(s, conn)
+	err = extOrPortSendUserAddr(s, conn.RemoteAddr())
 	if err != nil {
 		return err
 	}
