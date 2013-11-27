@@ -20,7 +20,7 @@
 //
 // Sample server usage:
 // 	func handler(conn net.Conn) {
-// 		or, err := pt.ConnectOr(&ptInfo, conn, "foo")
+// 		or, err := pt.ConnectOr(&ptInfo, conn.RemoteAddr(), "foo")
 // 		if err != nil {
 // 			return
 // 		}
@@ -648,10 +648,10 @@ func extOrPortRecvCommand(s io.Reader) (cmd uint16, body []byte, err error) {
 // Send USERADDR and TRANSPORT commands followed by a DONE command. Wait for an
 // OKAY or DENY response command from the server. Returns nil if and only if
 // OKAY is received.
-func extOrPortSetup(s io.ReadWriter, conn net.Conn, methodName string) error {
+func extOrPortSetup(s io.ReadWriter, addr net.Addr, methodName string) error {
 	var err error
 
-	err = extOrPortSendUserAddr(s, conn.RemoteAddr())
+	err = extOrPortSendUserAddr(s, addr)
 	if err != nil {
 		return err
 	}
@@ -680,7 +680,7 @@ func extOrPortSetup(s io.ReadWriter, conn net.Conn, methodName string) error {
 // open *net.TCPConn. If connecting to the extended OR port, extended OR port
 // authentication à la 217-ext-orport-auth.txt is done before returning; an
 // error is returned if authentication fails.
-func ConnectOr(info *ServerInfo, conn net.Conn, methodName string) (*net.TCPConn, error) {
+func ConnectOr(info *ServerInfo, addr net.Addr, methodName string) (*net.TCPConn, error) {
 	if info.ExtendedOrAddr == nil {
 		return net.DialTCP("tcp", nil, info.OrAddr)
 	}
@@ -695,7 +695,7 @@ func ConnectOr(info *ServerInfo, conn net.Conn, methodName string) (*net.TCPConn
 		s.Close()
 		return nil, err
 	}
-	err = extOrPortSetup(s, conn, methodName)
+	err = extOrPortSetup(s, addr, methodName)
 	if err != nil {
 		s.Close()
 		return nil, err

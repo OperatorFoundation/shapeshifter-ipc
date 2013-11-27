@@ -50,7 +50,7 @@ func handleConnection(conn net.Conn) {
 		handlerChan <- -1
 	}()
 
-	or, err := pt.ConnectOr(&ptInfo, conn, "dummy")
+	or, err := pt.ConnectOr(&ptInfo, conn.RemoteAddr(), "dummy")
 	if err != nil {
 		return
 	}
