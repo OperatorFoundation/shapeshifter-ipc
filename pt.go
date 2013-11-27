@@ -472,8 +472,8 @@ func ServerSetup(methodNames []string) (ServerInfo, error) {
 }
 
 // See 217-ext-orport-auth.txt section 4.2.1.3.
-func computeServerHash(info *ServerInfo, clientNonce, serverNonce []byte) []byte {
-	h := hmac.New(sha256.New, info.AuthCookie)
+func computeServerHash(authCookie, clientNonce, serverNonce []byte) []byte {
+	h := hmac.New(sha256.New, authCookie)
 	io.WriteString(h, "ExtORPort authentication server-to-client hash")
 	h.Write(clientNonce)
 	h.Write(serverNonce)
@@ -481,8 +481,8 @@ func computeServerHash(info *ServerInfo, clientNonce, serverNonce []byte) []byte
 }
 
 // See 217-ext-orport-auth.txt section 4.2.1.3.
-func computeClientHash(info *ServerInfo, clientNonce, serverNonce []byte) []byte {
-	h := hmac.New(sha256.New, info.AuthCookie)
+func computeClientHash(authCookie, clientNonce, serverNonce []byte) []byte {
+	h := hmac.New(sha256.New, authCookie)
 	io.WriteString(h, "ExtORPort authentication client-to-server hash")
 	h.Write(clientNonce)
 	h.Write(serverNonce)
@@ -541,12 +541,12 @@ func extOrPortAuthenticate(s io.ReadWriter, info *ServerInfo) error {
 		return err
 	}
 
-	expectedServerHash := computeServerHash(info, clientNonce, serverNonce)
+	expectedServerHash := computeServerHash(info.AuthCookie, clientNonce, serverNonce)
 	if subtle.ConstantTimeCompare(serverHash, expectedServerHash) != 1 {
 		return errors.New(fmt.Sprintf("mismatch in server hash"))
 	}
 
-	clientHash = computeClientHash(info, clientNonce, serverNonce)
+	clientHash = computeClientHash(info.AuthCookie, clientNonce, serverNonce)
 	_, err = s.Write(clientHash)
 	if err != nil {
 		return err
