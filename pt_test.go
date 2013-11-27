@@ -2,6 +2,7 @@ package pt
 
 import (
 	"bytes"
+	"encoding/binary"
 	"fmt"
 	"io/ioutil"
 	"net"
@@ -428,6 +429,44 @@ func TestExtOrSendCommand(t *testing.T) {
 		if !bytes.Equal(output, test.expected) {
 			t.Errorf("0x%04x %s → %s (expected %s)", test.cmd, fmtBytes(test.body),
 				fmtBytes(output), fmtBytes(test.expected))
+		}
+	}
+}
+
+func TestExtOrSendUserAddr(t *testing.T) {
+	addrs := [...]net.TCPAddr{
+		net.TCPAddr{IP: net.ParseIP("0.0.0.0"), Port: 0},
+		net.TCPAddr{IP: net.ParseIP("1.2.3.4"), Port: 9999},
+		net.TCPAddr{IP: net.ParseIP("255.255.255.255"), Port: 65535},
+		net.TCPAddr{IP: net.ParseIP("::"), Port: 0},
+		net.TCPAddr{IP: net.ParseIP("ffff:ffff:ffff:ffff:ffff:ffff:255.255.255.255"), Port: 65535},
+	}
+
+	for _, addr := range addrs {
+		var buf bytes.Buffer
+		err := extOrPortSendUserAddr(&buf, &addr)
+		if err != nil {
+			t.Errorf("%s unexpectedly returned an error: %s", addr, err)
+		}
+		var cmd, length uint16
+		binary.Read(&buf, binary.BigEndian, &cmd)
+		if cmd != extOrCmdUserAddr {
+			t.Errorf("%s → cmd 0x%04x (expected 0x%04x)", addr, cmd, extOrCmdUserAddr)
+		}
+		binary.Read(&buf, binary.BigEndian, &length)
+		p := make([]byte, length+1)
+		n, err := buf.Read(p)
+		if n != int(length) {
+			t.Errorf("%s said length %d but had at least %d", addr, length, n)
+		}
+		// test that parsing the address gives something equivalent to
+		// the original.
+		outputAddr, err := resolveAddr(string(p))
+		if err != nil {
+			t.Fatal(err)
+		}
+		if !tcpAddrsEqual(&addr, outputAddr) {
+			t.Errorf("%s → %s", addr, outputAddr)
 		}
 	}
 }
