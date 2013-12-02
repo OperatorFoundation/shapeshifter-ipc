@@ -20,6 +20,10 @@ const (
 	socksRequestFailed   = 0x5b
 )
 
+type Request struct {
+	Target string
+}
+
 // Read a SOCKS4a connect request, and call the given connect callback with the
 // requested destination string. If the callback returns an error, sends a SOCKS
 // request failed message. Otherwise, sends a SOCKS request granted message for
@@ -40,12 +44,12 @@ const (
 // 	defer remote.Close()
 // 	copyLoop(local, remote)
 func AwaitSocks4aConnect(conn *net.TCPConn, connect func(string) (*net.TCPAddr, error)) error {
-	dest, err := readSocks4aConnect(conn)
+	req, err := readSocks4aConnect(conn)
 	if err != nil {
 		sendSocks4aResponseFailed(conn)
 		return err
 	}
-	destAddr, err := connect(dest)
+	destAddr, err := connect(req.Target)
 	if err != nil {
 		sendSocks4aResponseFailed(conn)
 		return err
@@ -54,8 +58,8 @@ func AwaitSocks4aConnect(conn *net.TCPConn, connect func(string) (*net.TCPAddr, 
 	return nil
 }
 
-// Read a SOCKS4a connect request. Returns a "host:port" string.
-func readSocks4aConnect(s io.Reader) (target string, err error) {
+// Read a SOCKS4a connect request. Returns a Request.
+func readSocks4aConnect(s io.Reader) (req Request, err error) {
 	r := bufio.NewReader(s)
 
 	var h [8]byte
@@ -97,7 +101,7 @@ func readSocks4aConnect(s io.Reader) (target string, err error) {
 		return
 	}
 
-	target = fmt.Sprintf("%s:%d", host, port)
+	req.Target = fmt.Sprintf("%s:%d", host, port)
 	return
 }
 
