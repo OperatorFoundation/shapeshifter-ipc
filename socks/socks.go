@@ -55,24 +55,26 @@ func AwaitSocks4aConnect(conn *net.TCPConn, connect func(string) (*net.TCPAddr, 
 }
 
 // Read a SOCKS4a connect request. Returns a "host:port" string.
-func readSocks4aConnect(s io.Reader) (string, error) {
+func readSocks4aConnect(s io.Reader) (target string, err error) {
 	r := bufio.NewReader(s)
 
 	var h [8]byte
-	n, err := io.ReadFull(r, h[:])
+	_, err = io.ReadFull(r, h[:])
 	if err != nil {
-		return "", errors.New(fmt.Sprintf("after %d bytes of SOCKS header: %s", n, err))
+		return
 	}
 	if h[0] != socksVersion {
-		return "", errors.New(fmt.Sprintf("SOCKS header had version 0x%02x, not 0x%02x", h[0], socksVersion))
+		err = errors.New(fmt.Sprintf("SOCKS header had version 0x%02x, not 0x%02x", h[0], socksVersion))
+		return
 	}
 	if h[1] != socksCmdConnect {
-		return "", errors.New(fmt.Sprintf("SOCKS header had command 0x%02x, not 0x%02x", h[1], socksCmdConnect))
+		err = errors.New(fmt.Sprintf("SOCKS header had command 0x%02x, not 0x%02x", h[1], socksCmdConnect))
+		return
 	}
 
 	_, err = r.ReadBytes('\x00')
 	if err != nil {
-		return "", errors.New(fmt.Sprintf("reading SOCKS userid: %s", err))
+		return
 	}
 
 	var port int
@@ -80,9 +82,10 @@ func readSocks4aConnect(s io.Reader) (string, error) {
 
 	port = int(h[2])<<8 | int(h[3])<<0
 	if h[4] == 0 && h[5] == 0 && h[6] == 0 && h[7] != 0 {
-		hostBytes, err := r.ReadBytes('\x00')
+		var hostBytes []byte
+		hostBytes, err = r.ReadBytes('\x00')
 		if err != nil {
-			return "", errors.New(fmt.Sprintf("reading SOCKS4a destination: %s", err))
+			return
 		}
 		host = string(hostBytes[:len(hostBytes)-1])
 	} else {
@@ -90,10 +93,12 @@ func readSocks4aConnect(s io.Reader) (string, error) {
 	}
 
 	if r.Buffered() != 0 {
-		return "", errors.New(fmt.Sprintf("%d bytes left after SOCKS header", r.Buffered()))
+		err = errors.New(fmt.Sprintf("%d bytes left after SOCKS header", r.Buffered()))
+		return
 	}
 
-	return fmt.Sprintf("%s:%d", host, port), nil
+	target = fmt.Sprintf("%s:%d", host, port)
+	return
 }
 
 // Send a SOCKS4a response with the given code and address.
