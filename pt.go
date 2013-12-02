@@ -51,7 +51,6 @@
 package pt
 
 import (
-	"bufio"
 	"bytes"
 	"crypto/hmac"
 	"crypto/rand"
@@ -490,16 +489,16 @@ func computeClientHash(authCookie, clientNonce, serverNonce []byte) []byte {
 }
 
 func extOrPortAuthenticate(s io.ReadWriter, info *ServerInfo) error {
-	r := bufio.NewReader(s)
-
 	// Read auth types. 217-ext-orport-auth.txt section 4.1.
 	var authTypes [256]bool
 	var count int
 	for count = 0; count < 256; count++ {
-		b, err := r.ReadByte()
+		buf := make([]byte, 1)
+		_, err := io.ReadFull(s, buf)
 		if err != nil {
 			return err
 		}
+		b := buf[0]
 		if b == 0 {
 			break
 		}
@@ -532,11 +531,11 @@ func extOrPortAuthenticate(s io.ReadWriter, info *ServerInfo) error {
 		return err
 	}
 
-	_, err = io.ReadFull(r, serverHash)
+	_, err = io.ReadFull(s, serverHash)
 	if err != nil {
 		return err
 	}
-	_, err = io.ReadFull(r, serverNonce)
+	_, err = io.ReadFull(s, serverNonce)
 	if err != nil {
 		return err
 	}
@@ -553,16 +552,12 @@ func extOrPortAuthenticate(s io.ReadWriter, info *ServerInfo) error {
 	}
 
 	status := make([]byte, 1)
-	_, err = io.ReadFull(r, status)
+	_, err = io.ReadFull(s, status)
 	if err != nil {
 		return err
 	}
 	if status[0] != 1 {
 		return errors.New(fmt.Sprintf("server rejected authentication"))
-	}
-
-	if r.Buffered() != 0 {
-		return errors.New(fmt.Sprintf("%d bytes left after extended OR port authentication", r.Buffered()))
 	}
 
 	return nil
