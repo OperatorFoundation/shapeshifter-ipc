@@ -21,7 +21,8 @@ const (
 )
 
 type Request struct {
-	Target string
+	Username string
+	Target   string
 }
 
 // Read a SOCKS4a connect request, and call the given connect callback with the
@@ -76,10 +77,12 @@ func readSocks4aConnect(s io.Reader) (req Request, err error) {
 		return
 	}
 
-	_, err = r.ReadBytes('\x00')
+	var usernameBytes []byte
+	usernameBytes, err = r.ReadBytes('\x00')
 	if err != nil {
 		return
 	}
+	req.Username = string(usernameBytes[:len(usernameBytes)-1])
 
 	var port int
 	var host string
