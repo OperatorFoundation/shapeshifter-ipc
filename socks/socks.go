@@ -17,7 +17,7 @@ const (
 	socksCmdConnect      = 0x01
 	socksResponseVersion = 0x00
 	socksRequestGranted  = 0x5a
-	socksRequestFailed   = 0x5b
+	socksRequestRejected = 0x5b
 )
 
 type Request struct {
@@ -47,12 +47,12 @@ type Request struct {
 func AwaitSocks4aConnect(conn *net.TCPConn, connect func(string) (*net.TCPAddr, error)) error {
 	req, err := readSocks4aConnect(conn)
 	if err != nil {
-		sendSocks4aResponseFailed(conn)
+		sendSocks4aResponseRejected(conn)
 		return err
 	}
 	destAddr, err := connect(req.Target)
 	if err != nil {
-		sendSocks4aResponseFailed(conn)
+		sendSocks4aResponseRejected(conn)
 		return err
 	}
 	sendSocks4aResponseGranted(conn, destAddr)
@@ -131,6 +131,6 @@ func sendSocks4aResponseGranted(w io.Writer, addr *net.TCPAddr) error {
 }
 
 // Send a SOCKS4a response code 0x5b (with an all-zero address).
-func sendSocks4aResponseFailed(w io.Writer) error {
-	return sendSocks4aResponse(w, socksRequestFailed, &emptyAddr)
+func sendSocks4aResponseRejected(w io.Writer) error {
+	return sendSocks4aResponse(w, socksRequestRejected, &emptyAddr)
 }
