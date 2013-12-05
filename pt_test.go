@@ -475,7 +475,7 @@ func TestExtOrSendUserAddr(t *testing.T) {
 func TestExtOrPortSendTransport(t *testing.T) {
 	tests := [...]struct {
 		methodName string
-		expected []byte
+		expected   []byte
 	}{
 		{"", []byte("\x00\x02\x00\x00")},
 		{"a", []byte("\x00\x02\x00\x01a")},
@@ -529,9 +529,9 @@ func TestExtOrPortRecvCommand(t *testing.T) {
 		[]byte("\x12\x34\x00\x01"),
 	}
 	goodTests := [...]struct {
-		input []byte
-		cmd uint16
-		body []byte
+		input    []byte
+		cmd      uint16
+		body     []byte
 		leftover []byte
 	}{
 		{
