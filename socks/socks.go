@@ -39,6 +39,7 @@ const (
 	socksRequestRejected = 0x5b
 )
 
+// Request describes a SOCKS request.
 type Request struct {
 	Username string
 	Target   string
