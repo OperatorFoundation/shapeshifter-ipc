@@ -31,7 +31,7 @@
 // 	var err error
 // 	ptInfo, err = pt.ServerSetup([]string{"foo"})
 // 	if err != nil {
-//	 	os.Exit(1)
+// 		os.Exit(1)
 // 	}
 // 	for _, bindaddr := range ptInfo.Bindaddrs {
 // 		ln, err := startListener(bindaddr.Addr, bindaddr.MethodName)
