@@ -44,7 +44,7 @@ func copyLoop(a, b net.Conn) {
 	wg.Wait()
 }
 
-func handleConnection(local net.Conn) error {
+func handleConnection(local *socks.Conn) error {
 	defer local.Close()
 
 	handlerChan <- 1
@@ -52,28 +52,25 @@ func handleConnection(local net.Conn) error {
 		handlerChan <- -1
 	}()
 
-	var remote net.Conn
-	err := socks.AwaitSocks4aConnect(local.(*net.TCPConn), func(dest string) (*net.TCPAddr, error) {
-		var err error
-		// set remote in outer function environment
-		remote, err = net.Dial("tcp", dest)
-		if err != nil {
-			return nil, err
-		}
-		return remote.RemoteAddr().(*net.TCPAddr), nil
-	})
+	remote, err := net.Dial("tcp", local.Req.Target)
+	if err != nil {
+		local.Reject()
+		return err
+	}
+	err = local.Grant(remote.RemoteAddr().(*net.TCPAddr))
 	if err != nil {
 		return err
 	}
+
 	defer remote.Close()
 	copyLoop(local, remote)
 
 	return nil
 }
 
-func acceptLoop(ln net.Listener) error {
+func acceptLoop(ln *socks.Listener) error {
 	for {
-		conn, err := ln.Accept()
+		conn, err := ln.AcceptSocks()
 		if err != nil {
 			return err
 		}
@@ -83,7 +80,7 @@ func acceptLoop(ln net.Listener) error {
 }
 
 func startListener(addr string) (net.Listener, error) {
-	ln, err := net.Listen("tcp", addr)
+	ln, err := socks.Listen("tcp", addr)
 	if err != nil {
 		return nil, err
 	}

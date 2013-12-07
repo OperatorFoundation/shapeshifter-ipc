@@ -1,6 +1,25 @@
 // Package socks implements a SOCKS4a server sufficient for a Tor client
 // transport plugin.
 //
+// 	ln, err := socks.Listen("tcp", ":3128")
+// 	if err != nil {
+// 		return err
+// 	}
+// 	conn, err := ln.AcceptSocks()
+// 	if err != nil {
+// 		return err
+// 	}
+// 	defer conn.Close()
+// 	remote, err := net.Dial("tcp", local.Req.Target)
+// 	if err != nil {
+// 		local.Reject()
+// 		return err
+// 	}
+// 	err = local.Grant(remote.RemoteAddr().(*net.TCPAddr))
+// 	if err != nil {
+// 		return err
+// 	}
+//
 // http://ftp.icm.edu.pl/packages/socks/socks4/SOCKS4.protocol
 package socks
 
@@ -25,38 +44,65 @@ type Request struct {
 	Target   string
 }
 
-// Read a SOCKS4a connect request, and call the given connect callback with the
-// requested destination string. If the callback returns an error, sends a SOCKS
-// request failed message. Otherwise, sends a SOCKS request granted message for
-// the destination address returned by the callback.
-// 	var remote net.Conn
-// 	err := socks.AwaitSocks4aConnect(local.(*net.TCPConn), func(dest string) (*net.TCPAddr, error) {
-// 		var err error
-// 		// set remote in outer function environment
-// 		remote, err = net.Dial("tcp", dest)
-// 		if err != nil {
-// 			return nil, err
-// 		}
-// 		return remote.RemoteAddr().(*net.TCPAddr), nil
-// 	})
-// 	if err != nil {
-// 		return err
-// 	}
-// 	defer remote.Close()
-// 	copyLoop(local, remote)
-func AwaitSocks4aConnect(conn *net.TCPConn, connect func(string) (*net.TCPAddr, error)) error {
-	req, err := readSocks4aConnect(conn)
+// Conn encapsulates a net.Conn and information associated with a SOCKS request.
+type Conn struct {
+	net.Conn
+	Req Request
+}
+
+// Send a message to the proxy client that access to the given address is
+// granted.
+func (conn *Conn) Grant(addr *net.TCPAddr) error {
+	return sendSocks4aResponseGranted(conn, addr)
+}
+
+// Send a message to the proxy client that access was rejected or failed.
+func (conn *Conn) Reject() error {
+	return sendSocks4aResponseRejected(conn)
+}
+
+// Listener wraps a net.Listener in order to read a SOCKS request on Accept.
+type Listener struct {
+	net.Listener
+}
+
+// Open a net.Listener according to network and laddr, and return it as a
+// Listener.
+func Listen(network, laddr string) (*Listener, error) {
+	ln, err := net.Listen(network, laddr)
 	if err != nil {
-		sendSocks4aResponseRejected(conn)
-		return err
+		return nil, err
 	}
-	destAddr, err := connect(req.Target)
+	return NewListener(ln), nil
+}
+
+// Create a new Listener wrapping the given net.Listener.
+func NewListener(ln net.Listener) *Listener {
+	return &Listener{ln}
+}
+
+// Accept is the same as AcceptSocks, except that it returns a generic net.Conn.
+// It is present for the sake of satisfying the net.Listener interface.
+func (ln *Listener) Accept() (net.Conn, error) {
+	return ln.AcceptSocks()
+}
+
+// Call Accept on the wrapped net.Listener, do SOCKS negotiation, and return a
+// Conn. After accepting, you must call either conn.Grant or conn.Reject
+// (presumably after trying to connect to conn.Req.Target).
+func (ln *Listener) AcceptSocks() (*Conn, error) {
+	c, err := ln.Listener.Accept()
 	if err != nil {
-		sendSocks4aResponseRejected(conn)
-		return err
+		return nil, err
 	}
-	sendSocks4aResponseGranted(conn, destAddr)
-	return nil
+	conn := new(Conn)
+	conn.Conn = c
+	conn.Req, err = readSocks4aConnect(conn)
+	if err != nil {
+		conn.Close()
+		return nil, err
+	}
+	return conn, nil
 }
 
 // Read a SOCKS4a connect request. Returns a Request.
