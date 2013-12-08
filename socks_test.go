@@ -1,14 +1,10 @@
-package socks
+package pt
 
 import (
 	"bytes"
 	"net"
 	"testing"
 )
-
-func tcpAddrsEqual(a, b *net.TCPAddr) bool {
-	return a.IP.Equal(b.IP) && a.Port == b.Port
-}
 
 func TestReadSocks4aConnect(t *testing.T) {
 	badTests := [...][]byte{

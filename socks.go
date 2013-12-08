@@ -1,27 +1,4 @@
-// Package socks implements a SOCKS4a server sufficient for a Tor client
-// transport plugin.
-//
-// 	ln, err := socks.Listen("tcp", ":3128")
-// 	if err != nil {
-// 		return err
-// 	}
-// 	conn, err := ln.AcceptSocks()
-// 	if err != nil {
-// 		return err
-// 	}
-// 	defer conn.Close()
-// 	remote, err := net.Dial("tcp", local.Req.Target)
-// 	if err != nil {
-// 		local.Reject()
-// 		return err
-// 	}
-// 	err = local.Grant(remote.RemoteAddr().(*net.TCPAddr))
-// 	if err != nil {
-// 		return err
-// 	}
-//
-// http://ftp.icm.edu.pl/packages/socks/socks4/SOCKS4.protocol
-package socks
+package pt
 
 import (
 	"bufio"
@@ -39,64 +16,93 @@ const (
 	socksRequestRejected = 0x5b
 )
 
-// Request describes a SOCKS request.
-type Request struct {
+// SocksRequest describes a SOCKS request.
+type SocksRequest struct {
 	Username string
 	Target   string
 }
 
-// Conn encapsulates a net.Conn and information associated with a SOCKS request.
-type Conn struct {
+// SocksConn encapsulates a net.Conn and information associated with a SOCKS request.
+type SocksConn struct {
 	net.Conn
-	Req Request
+	Req SocksRequest
 }
 
 // Send a message to the proxy client that access to the given address is
 // granted.
-func (conn *Conn) Grant(addr *net.TCPAddr) error {
+func (conn *SocksConn) Grant(addr *net.TCPAddr) error {
 	return sendSocks4aResponseGranted(conn, addr)
 }
 
 // Send a message to the proxy client that access was rejected or failed.
-func (conn *Conn) Reject() error {
+func (conn *SocksConn) Reject() error {
 	return sendSocks4aResponseRejected(conn)
 }
 
-// Listener wraps a net.Listener in order to read a SOCKS request on Accept.
-type Listener struct {
+// SocksListener wraps a net.Listener in order to read a SOCKS request on Accept.
+//
+// 	func handleConn(conn *pt.SocksConn) error {
+// 		defer conn.Close()
+//
+// 		remote, err := net.Dial("tcp", conn.Req.Target)
+// 		if err != nil {
+// 			conn.Reject()
+// 			return err
+// 		}
+// 		err = conn.Grant(remote.RemoteAddr().(*net.TCPAddr))
+// 		if err != nil {
+// 			return err
+// 		}
+// 		defer remote.Close()
+//
+// 		// do something with conn and remote
+// 	}
+// 	...
+// 	ln, err := pt.ListenSocks("tcp", "127.0.0.1:0")
+// 	if err != nil {
+// 		panic(err.Error())
+// 	}
+// 	for {
+// 		conn, err := ln.AcceptSocks()
+// 		if err != nil {
+// 			break
+// 		}
+// 		go handleConn(conn)
+// 	}
+type SocksListener struct {
 	net.Listener
 }
 
 // Open a net.Listener according to network and laddr, and return it as a
-// Listener.
-func Listen(network, laddr string) (*Listener, error) {
+// SocksListener.
+func ListenSocks(network, laddr string) (*SocksListener, error) {
 	ln, err := net.Listen(network, laddr)
 	if err != nil {
 		return nil, err
 	}
-	return NewListener(ln), nil
+	return NewSocksListener(ln), nil
 }
 
-// Create a new Listener wrapping the given net.Listener.
-func NewListener(ln net.Listener) *Listener {
-	return &Listener{ln}
+// Create a new SocksListener wrapping the given net.Listener.
+func NewSocksListener(ln net.Listener) *SocksListener {
+	return &SocksListener{ln}
 }
 
 // Accept is the same as AcceptSocks, except that it returns a generic net.Conn.
 // It is present for the sake of satisfying the net.Listener interface.
-func (ln *Listener) Accept() (net.Conn, error) {
+func (ln *SocksListener) Accept() (net.Conn, error) {
 	return ln.AcceptSocks()
 }
 
 // Call Accept on the wrapped net.Listener, do SOCKS negotiation, and return a
-// Conn. After accepting, you must call either conn.Grant or conn.Reject
+// SocksConn. After accepting, you must call either conn.Grant or conn.Reject
 // (presumably after trying to connect to conn.Req.Target).
-func (ln *Listener) AcceptSocks() (*Conn, error) {
+func (ln *SocksListener) AcceptSocks() (*SocksConn, error) {
 	c, err := ln.Listener.Accept()
 	if err != nil {
 		return nil, err
 	}
-	conn := new(Conn)
+	conn := new(SocksConn)
 	conn.Conn = c
 	conn.Req, err = readSocks4aConnect(conn)
 	if err != nil {
@@ -106,8 +112,8 @@ func (ln *Listener) AcceptSocks() (*Conn, error) {
 	return conn, nil
 }
 
-// Read a SOCKS4a connect request. Returns a Request.
-func readSocks4aConnect(s io.Reader) (req Request, err error) {
+// Read a SOCKS4a connect request. Returns a SocksRequest.
+func readSocks4aConnect(s io.Reader) (req SocksRequest, err error) {
 	r := bufio.NewReader(s)
 
 	var h [8]byte

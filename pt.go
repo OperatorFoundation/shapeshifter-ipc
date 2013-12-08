@@ -8,15 +8,15 @@
 // 		os.Exit(1)
 // 	}
 // 	for _, methodName := range ptInfo.MethodNames {
-// 		ln, err := startSocksListener()
+// 		ln, err := pt.ListenSocks("tcp", "127.0.0.1:0")
 // 		if err != nil {
 // 			pt.CmethodError(methodName, err.Error())
 // 			continue
 // 		}
+// 		go acceptLoop(ln)
 // 		pt.Cmethod(methodName, "socks4", ln.Addr())
 // 	}
 // 	pt.CmethodsDone()
-// See the socks package for help with writing a SOCKS listener.
 //
 // Sample server usage:
 // 	func handler(conn net.Conn) {
@@ -48,6 +48,11 @@
 //
 // Extended ORPort Authentication:
 // https://gitweb.torproject.org/torspec.git/blob/HEAD:/proposals/217-ext-orport-auth.txt.
+//
+// The package implements a SOCKS4a server sufficient for a Tor client transport
+// plugin.
+//
+// http://ftp.icm.edu.pl/packages/socks/socks4/SOCKS4.protocol
 package pt
 
 import (

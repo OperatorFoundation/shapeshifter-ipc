@@ -20,7 +20,6 @@ import (
 )
 
 import "git.torproject.org/pluggable-transports/goptlib.git"
-import "git.torproject.org/pluggable-transports/goptlib.git/socks"
 
 var ptInfo pt.ClientInfo
 
@@ -44,7 +43,7 @@ func copyLoop(a, b net.Conn) {
 	wg.Wait()
 }
 
-func handleConnection(local *socks.Conn) error {
+func handleConnection(local *pt.SocksConn) error {
 	defer local.Close()
 
 	handlerChan <- 1
@@ -68,7 +67,7 @@ func handleConnection(local *socks.Conn) error {
 	return nil
 }
 
-func acceptLoop(ln *socks.Listener) error {
+func acceptLoop(ln *pt.SocksListener) error {
 	for {
 		conn, err := ln.AcceptSocks()
 		if err != nil {
@@ -80,7 +79,7 @@ func acceptLoop(ln *socks.Listener) error {
 }
 
 func startListener(addr string) (net.Listener, error) {
-	ln, err := socks.Listen("tcp", addr)
+	ln, err := pt.ListenSocks("tcp", addr)
 	if err != nil {
 		return nil, err
 	}
