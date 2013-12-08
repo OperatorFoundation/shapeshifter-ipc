@@ -2,47 +2,95 @@
 //
 // Sample client usage:
 // 	var ptInfo pt.ClientInfo
-// 	var err error
-// 	ptInfo, err = pt.ClientSetup([]string{"foo"})
-// 	if err != nil {
-// 		os.Exit(1)
-// 	}
-// 	for _, methodName := range ptInfo.MethodNames {
-// 		ln, err := pt.ListenSocks("tcp", "127.0.0.1:0")
+// 	...
+// 	func handler(conn *pt.SocksConn) error {
+// 		defer conn.Close()
+// 		remote, err := net.Dial("tcp", conn.Req.Target)
 // 		if err != nil {
-// 			pt.CmethodError(methodName, err.Error())
-// 			continue
+// 			conn.Reject()
+// 			return err
 // 		}
-// 		go acceptLoop(ln)
-// 		pt.Cmethod(methodName, ln.Version(), ln.Addr())
+// 		defer remote.Close()
+// 		err = conn.Grant(remote.RemoteAddr().(*net.TCPAddr))
+// 		if err != nil {
+// 			return err
+// 		}
+// 		// do something with conn and or.
+// 		return nil
 // 	}
-// 	pt.CmethodsDone()
+// 	func acceptLoop(ln *pt.SocksListener) error {
+// 		for {
+// 			conn, err := ln.AcceptSocks()
+// 			if err != nil {
+// 				return err
+// 			}
+// 			go handler(conn)
+// 		}
+// 		return nil
+// 	}
+// 	...
+// 	func main() {
+// 		var err error
+// 		ptInfo, err = pt.ClientSetup([]string{"foo"})
+// 		if err != nil {
+// 			os.Exit(1)
+// 		}
+// 		for _, methodName := range ptInfo.MethodNames {
+// 			ln, err := pt.ListenSocks("tcp", "127.0.0.1:0")
+// 			if err != nil {
+// 				pt.CmethodError(methodName, err.Error())
+// 				continue
+// 			}
+// 			go acceptLoop(ln)
+// 			pt.Cmethod(methodName, ln.Version(), ln.Addr())
+// 		}
+// 		pt.CmethodsDone()
+// 	}
 //
 // Sample server usage:
-// 	func handler(conn net.Conn) {
+// 	var ptInfo pt.ServerInfo
+// 	...
+// 	func handler(conn net.Conn) error {
+// 		defer conn.Close()
 // 		or, err := pt.ConnectOr(&ptInfo, conn.RemoteAddr(), "foo")
 // 		if err != nil {
 // 			return
 // 		}
+// 		defer or.Close()
 // 		// do something with or and conn
+// 		return nil
+// 	}
+// 	func acceptLoop(ln net.Listener) error {
+// 		for {
+// 			conn, err := ln.Accept()
+// 			if err != nil {
+// 				return err
+// 			}
+// 			go handler(conn)
+// 		}
+// 		return nil
 // 	}
 // 	...
-// 	var ptInfo pt.ServerInfo
-// 	var err error
-// 	ptInfo, err = pt.ServerSetup([]string{"foo"})
-// 	if err != nil {
-// 		os.Exit(1)
-// 	}
-// 	for _, bindaddr := range ptInfo.Bindaddrs {
-// 		ln, err := net.ListenTCP("tcp", bindaddr.Addr)
+// 	func main() {
+// 		var err error
+// 		ptInfo, err = pt.ServerSetup([]string{"foo"})
 // 		if err != nil {
-// 			pt.SmethodError(bindaddr.MethodName, err.Error())
-// 			continue
+// 			os.Exit(1)
 // 		}
-// 		go acceptLoop(ln)
-// 		pt.Smethod(bindaddr.MethodName, ln.Addr())
+// 		for _, bindaddr := range ptInfo.Bindaddrs {
+// 			ln, err := net.ListenTCP("tcp", bindaddr.Addr)
+// 			if err != nil {
+// 				pt.SmethodError(bindaddr.MethodName, err.Error())
+// 				continue
+// 			}
+// 			go acceptLoop(ln)
+// 			pt.Smethod(bindaddr.MethodName, ln.Addr())
+// 		}
+// 		pt.SmethodsDone()
 // 	}
-// 	pt.SmethodsDone()
+//
+// Some additional care is needed to handle SIGINT and shutdown properly. See
+// the example programs dummy-client and dummy-server.
 //
 // Tor pluggable transports specification:
 // https://gitweb.torproject.org/torspec.git/blob/HEAD:/pt-spec.txt.

@@ -44,7 +44,7 @@ func copyLoop(a, b net.Conn) {
 	wg.Wait()
 }
 
-func handleConnection(conn net.Conn) error {
+func handler(conn net.Conn) error {
 	defer conn.Close()
 
 	handlerChan <- 1
@@ -69,7 +69,7 @@ func acceptLoop(ln net.Listener) error {
 		if err != nil {
 			return err
 		}
-		go handleConnection(conn)
+		go handler(conn)
 	}
 	return nil
 }
