@@ -103,3 +103,73 @@ func parseClientParameters(s string) (args Args, err error) {
 	}
 	return args, nil
 }
+
+// Parse a transport–name–value mapping as from TOR_PT_SERVER_TRANSPORT_OPTIONS.
+//
+// "<value> is a k=v string value with options that are to be passed to the
+// transport. Colons, semicolons, equal signs and backslashes must be escaped
+// with a backslash."
+// Example: trebuchet:secret=nou;trebuchet:cache=/tmp/cache;ballista:secret=yes
+func parseServerTransportOptions(s string) (opts map[string]Args, err error) {
+	opts = make(map[string]Args)
+	if len(s) == 0 {
+		return
+	}
+	i := 0
+	for {
+		var methodName, key, value string
+		var offset, begin int
+
+		begin = i
+		// Read the method name.
+		offset, methodName, err = indexUnescaped(s[i:], []byte{':', '=', ';'})
+		if err != nil {
+			return
+		}
+		i += offset
+		// End of string or no colon?
+		if i >= len(s) || s[i] != ':' {
+			err = errors.New(fmt.Sprintf("no colon in %q", s[begin:i]))
+			return
+		}
+		// Skip the colon.
+		i++
+		// Read the key.
+		offset, key, err = indexUnescaped(s[i:], []byte{'=', ';'})
+		if err != nil {
+			return
+		}
+		i += offset
+		// End of string or no equals sign?
+		if i >= len(s) || s[i] != '=' {
+			err = errors.New(fmt.Sprintf("no equals sign in %q", s[begin:i]))
+			return
+		}
+		// Skip the equals sign.
+		i++
+		// Read the value.
+		offset, value, err = indexUnescaped(s[i:], []byte{';'})
+		if err != nil {
+			return
+		}
+		i += offset
+		if len(methodName) == 0 {
+			err = errors.New(fmt.Sprintf("empty method name in %q", s[begin:i]))
+			return
+		}
+		if len(key) == 0 {
+			err = errors.New(fmt.Sprintf("empty key in %q", s[begin:i]))
+			return
+		}
+		if opts[methodName] == nil {
+			opts[methodName] = make(Args)
+		}
+		opts[methodName].Add(key, value)
+		if i >= len(s) {
+			break
+		}
+		// Skip the semicolon.
+		i++
+	}
+	return opts, nil
+}

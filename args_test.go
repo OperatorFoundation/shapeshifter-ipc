@@ -181,3 +181,113 @@ func TestParseClientParameters(t *testing.T) {
 		}
 	}
 }
+
+func optsEqual(a, b map[string]Args) bool {
+	for k, av := range a {
+		bv, ok := b[k]
+		if !ok || !argsEqual(av, bv) {
+			return false
+		}
+	}
+	for k, bv := range b {
+		av, ok := a[k]
+		if !ok || !argsEqual(av, bv) {
+			return false
+		}
+	}
+	return true
+}
+
+func TestParseServerTransportOptions(t *testing.T) {
+	badTests := [...]string{
+		":=",
+		"t:=",
+		":k=",
+		":=v",
+		"t:=v",
+		"t:=v",
+		"t:k=v;",
+		"abc",
+		"t:",
+		"key=value",
+		"=value",
+		"t:k=v\\",
+		"t1:k=v;t2:k=v\\",
+		"t:=key=value",
+		"t:==key=value",
+		"t:;key=value",
+		"t:key\\=value",
+	}
+	goodTests := [...]struct {
+		input    string
+		expected map[string]Args
+	}{
+		{
+			"",
+			map[string]Args{},
+		},
+		{
+			"t:k=v",
+			map[string]Args{
+				"t": Args{"k": []string{"v"}},
+			},
+		},
+		{
+			"t1:k=v1;t2:k=v2;t1:k=v3",
+			map[string]Args{
+				"t1": Args{"k": []string{"v1", "v3"}},
+				"t2": Args{"k": []string{"v2"}},
+			},
+		},
+		{
+			"t\\:1:k=v;t\\=2:k=v;t\\;3:k=v;t\\\\4:k=v",
+			map[string]Args{
+				"t:1":  Args{"k": []string{"v"}},
+				"t=2":  Args{"k": []string{"v"}},
+				"t;3":  Args{"k": []string{"v"}},
+				"t\\4": Args{"k": []string{"v"}},
+			},
+		},
+		{
+			"t:k\\:1=v;t:k\\=2=v;t:k\\;3=v;t:k\\\\4=v",
+			map[string]Args{
+				"t": Args{
+					"k:1":  []string{"v"},
+					"k=2":  []string{"v"},
+					"k;3":  []string{"v"},
+					"k\\4": []string{"v"},
+				},
+			},
+		},
+		{
+			"t:k=v\\:1;t:k=v\\=2;t:k=v\\;3;t:k=v\\\\4",
+			map[string]Args{
+				"t": Args{"k": []string{"v:1", "v=2", "v;3", "v\\4"}},
+			},
+		},
+		{
+			"trebuchet:secret=nou;trebuchet:cache=/tmp/cache;ballista:secret=yes",
+			map[string]Args{
+				"trebuchet": Args{"secret": []string{"nou"}, "cache": []string{"/tmp/cache"}},
+				"ballista":  Args{"secret": []string{"yes"}},
+			},
+		},
+	}
+
+	for _, input := range badTests {
+		_, err := parseServerTransportOptions(input)
+		if err == nil {
+			t.Errorf("%q unexpectedly succeeded", input)
+		}
+	}
+
+	for _, test := range goodTests {
+		opts, err := parseServerTransportOptions(test.input)
+		if err != nil {
+			t.Errorf("%q unexpectedly returned an error: %s", test.input, err)
+		}
+		if !optsEqual(opts, test.expected) {
+			t.Errorf("%q → %q (expected %q)", test.input, opts, test.expected)
+		}
+	}
+}
