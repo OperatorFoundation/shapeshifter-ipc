@@ -259,6 +259,12 @@ func Smethod(name string, addr net.Addr) {
 	line("SMETHOD", name, addr.String())
 }
 
+// Emit an SMETHOD line with an ARGS option. args is a name–value mapping that
+// will be added to the server's extrainfo document.
+func SmethodArgs(name string, addr net.Addr, args Args) {
+	line("SMETHOD", name, addr.String(), "ARGS:"+encodeSmethodArgs(args))
+}
+
 // Emit an SMETHODS DONE line. Call this after opening all server listeners.
 func SmethodsDone() {
 	line("SMETHODS", "DONE")
