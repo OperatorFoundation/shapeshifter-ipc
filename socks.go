@@ -161,17 +161,22 @@ func readSocks4aConnect(s io.Reader) (req SocksRequest, err error) {
 	return
 }
 
-// Send a SOCKS4a response with the given code and address.
+// Send a SOCKS4a response with the given code and address. If the IP field
+// inside addr is not an IPv4 address, the IP portion of the response will be
+// four zero bytes.
 func sendSocks4aResponse(w io.Writer, code byte, addr *net.TCPAddr) error {
 	var resp [8]byte
 	resp[0] = socksResponseVersion
 	resp[1] = code
 	resp[2] = byte((addr.Port >> 8) & 0xff)
 	resp[3] = byte((addr.Port >> 0) & 0xff)
-	resp[4] = addr.IP[0]
-	resp[5] = addr.IP[1]
-	resp[6] = addr.IP[2]
-	resp[7] = addr.IP[3]
+	ipv4 := addr.IP.To4()
+	if ipv4 != nil {
+		resp[4] = ipv4[0]
+		resp[5] = ipv4[1]
+		resp[6] = ipv4[2]
+		resp[7] = ipv4[3]
+	}
 	_, err := w.Write(resp[:])
 	return err
 }
