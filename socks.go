@@ -33,7 +33,8 @@ type SocksConn struct {
 }
 
 // Send a message to the proxy client that access to the given address is
-// granted.
+// granted. If the IP field inside addr is not an IPv4 address, the IP portion
+// of the response will be four zero bytes.
 func (conn *SocksConn) Grant(addr *net.TCPAddr) error {
 	return sendSocks4aResponseGranted(conn, addr)
 }
