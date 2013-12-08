@@ -95,6 +95,11 @@ func (ln *SocksListener) Accept() (net.Conn, error) {
 	return ln.AcceptSocks()
 }
 
+// Returns "socks4", suitable to be included in a call to pt.Cmethod.
+func (ln *SocksListener) Version() string {
+	return "socks4"
+}
+
 // Call Accept on the wrapped net.Listener, do SOCKS negotiation, and return a
 // SocksConn. After accepting, you must call either conn.Grant or conn.Reject
 // (presumably after trying to connect to conn.Req.Target).

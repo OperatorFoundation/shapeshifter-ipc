@@ -14,7 +14,7 @@
 // 			continue
 // 		}
 // 		go acceptLoop(ln)
-// 		pt.Cmethod(methodName, "socks4", ln.Addr())
+// 		pt.Cmethod(methodName, ln.Version(), ln.Addr())
 // 	}
 // 	pt.CmethodsDone()
 //
