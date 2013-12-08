@@ -254,64 +254,79 @@ func bindaddrSetsEqual(a, b []Bindaddr) bool {
 
 func TestGetServerBindaddrs(t *testing.T) {
 	badTests := [...]struct {
-		ptServerBindaddr   string
-		ptServerTransports string
-		methodNames        []string
+		ptServerBindaddr         string
+		ptServerTransports       string
+		ptServerTransportOptions string
+		methodNames              []string
 	}{
 		{
 			"xxx",
 			"xxx",
+			"",
 			[]string{},
 		},
 		{
 			"alpha-1.2.3.4",
 			"alpha",
+			"",
 			[]string{"alpha", "beta", "gamma"},
+		},
+		{
+			"alpha-1.2.3.4:1111",
+			"alpha",
+			"key=value",
+			[]string{"alpha"},
 		},
 	}
 	goodTests := [...]struct {
-		ptServerBindaddr   string
-		ptServerTransports string
-		methodNames        []string
-		expected           []Bindaddr
+		ptServerBindaddr         string
+		ptServerTransports       string
+		ptServerTransportOptions string
+		methodNames              []string
+		expected                 []Bindaddr
 	}{
 		{
 			"alpha-1.2.3.4:1111,beta-[1:2::3:4]:2222",
 			"alpha,beta,gamma",
+			"alpha:k1=v1,beta:k2=v2,gamma:k3=v3",
 			[]string{"alpha", "beta"},
 			[]Bindaddr{
-				{MethodName: "alpha", Addr: &net.TCPAddr{IP: net.ParseIP("1.2.3.4"), Port: 1111}},
-				{MethodName: "beta", Addr: &net.TCPAddr{IP: net.ParseIP("1:2::3:4"), Port: 2222}},
+				{"alpha", &net.TCPAddr{IP: net.ParseIP("1.2.3.4"), Port: 1111}, Args{"k1": []string{"v1"}}},
+				{"beta", &net.TCPAddr{IP: net.ParseIP("1:2::3:4"), Port: 2222}, Args{"k2": []string{"v2"}}},
 			},
 		},
 		{
 			"alpha-1.2.3.4:1111",
 			"xxx",
+			"",
 			[]string{"alpha", "beta", "gamma"},
 			[]Bindaddr{},
 		},
 		{
 			"alpha-1.2.3.4:1111",
 			"alpha,beta,gamma",
+			"",
 			[]string{},
 			[]Bindaddr{},
 		},
 		{
 			"alpha-1.2.3.4:1111,beta-[1:2::3:4]:2222",
 			"*",
+			"",
 			[]string{"alpha", "beta"},
 			[]Bindaddr{
-				{MethodName: "alpha", Addr: &net.TCPAddr{IP: net.ParseIP("1.2.3.4"), Port: 1111}},
-				{MethodName: "beta", Addr: &net.TCPAddr{IP: net.ParseIP("1:2::3:4"), Port: 2222}},
+				{"alpha", &net.TCPAddr{IP: net.ParseIP("1.2.3.4"), Port: 1111}, Args{}},
+				{"beta", &net.TCPAddr{IP: net.ParseIP("1:2::3:4"), Port: 2222}, Args{}},
 			},
 		},
 		{
 			"trebuchet-127.0.0.1:1984,ballista-127.0.0.1:4891",
 			"trebuchet,ballista",
+			"trebuchet:secret=nou;trebuchet:cache=/tmp/cache;ballista:secret=yes",
 			[]string{"trebuchet", "ballista"},
 			[]Bindaddr{
-				{MethodName: "trebuchet", Addr: &net.TCPAddr{IP: net.ParseIP("127.0.0.1"), Port: 1984}},
-				{MethodName: "ballista", Addr: &net.TCPAddr{IP: net.ParseIP("127.0.0.1"), Port: 4891}},
+				{"trebuchet", &net.TCPAddr{IP: net.ParseIP("127.0.0.1"), Port: 1984}, Args{"secret": []string{"nou"}, "cache": []string{"/tmp/cache"}}},
+				{"ballista", &net.TCPAddr{IP: net.ParseIP("127.0.0.1"), Port: 4891}, Args{"secret": []string{"yes"}}},
 			},
 		},
 	}
@@ -327,24 +342,26 @@ func TestGetServerBindaddrs(t *testing.T) {
 	for _, test := range badTests {
 		os.Setenv("TOR_PT_SERVER_BINDADDR", test.ptServerBindaddr)
 		os.Setenv("TOR_PT_SERVER_TRANSPORTS", test.ptServerTransports)
+		os.Setenv("TOR_PT_SERVER_TRANSPORT_OPTIONS", test.ptServerTransportOptions)
 		_, err := getServerBindaddrs(test.methodNames)
 		if err == nil {
-			t.Errorf("TOR_PT_SERVER_BINDADDR=%q TOR_PT_SERVER_TRANSPORTS=%q %q unexpectedly succeeded",
-				test.ptServerBindaddr, test.ptServerTransports, test.methodNames)
+			t.Errorf("TOR_PT_SERVER_BINDADDR=%q TOR_PT_SERVER_TRANSPORTS=%q TOR_PT_SERVER_TRANSPORT_OPTIONS=%q %q unexpectedly succeeded",
+				test.ptServerBindaddr, test.ptServerTransports, test.ptServerTransportOptions, test.methodNames)
 		}
 	}
 
 	for _, test := range goodTests {
 		os.Setenv("TOR_PT_SERVER_BINDADDR", test.ptServerBindaddr)
 		os.Setenv("TOR_PT_SERVER_TRANSPORTS", test.ptServerTransports)
+		os.Setenv("TOR_PT_SERVER_TRANSPORT_OPTIONS", test.ptServerTransportOptions)
 		output, err := getServerBindaddrs(test.methodNames)
 		if err != nil {
-			t.Errorf("TOR_PT_SERVER_BINDADDR=%q TOR_PT_SERVER_TRANSPORTS=%q %q unexpectedly returned an error: %s",
-				test.ptServerBindaddr, test.ptServerTransports, test.methodNames, err)
+			t.Errorf("TOR_PT_SERVER_BINDADDR=%q TOR_PT_SERVER_TRANSPORTS=%q TOR_PT_SERVER_TRANSPORT_OPTIONS=%q %q unexpectedly returned an error: %s",
+				test.ptServerBindaddr, test.ptServerTransports, test.ptServerTransportOptions, test.methodNames, err)
 		}
 		if !bindaddrSetsEqual(output, test.expected) {
-			t.Errorf("TOR_PT_SERVER_BINDADDR=%q TOR_PT_SERVER_TRANSPORTS=%q %q → %q (expected %q)",
-				test.ptServerBindaddr, test.ptServerTransports, test.methodNames, output, test.expected)
+			t.Errorf("TOR_PT_SERVER_BINDADDR=%q TOR_PT_SERVER_TRANSPORTS=%q TOR_PT_SERVER_TRANSPORT_OPTIONS=%q %q → %q (expected %q)",
+				test.ptServerBindaddr, test.ptServerTransports, test.ptServerTransportOptions, test.methodNames, output, test.expected)
 		}
 	}
 }
