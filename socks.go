@@ -18,8 +18,10 @@ const (
 
 // SocksRequest describes a SOCKS request.
 type SocksRequest struct {
+	// The userid string sent by the client.
 	Username string
-	Target   string
+	// The endpoint requested by the client as a "host:port" string.
+	Target string
 }
 
 // SocksConn encapsulates a net.Conn and information associated with a SOCKS request.
