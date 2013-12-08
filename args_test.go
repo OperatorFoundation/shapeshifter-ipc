@@ -299,3 +299,38 @@ func TestParseServerTransportOptions(t *testing.T) {
 		}
 	}
 }
+
+func TestEncodeSmethodArgs(t *testing.T) {
+	tests := [...]struct {
+		args     Args
+		expected string
+	}{
+		{
+			Args{},
+			"",
+		},
+		{
+			Args{"j": []string{"v1", "v2", "v3"}, "k": []string{"v1", "v2", "v3"}},
+			"j=v1,j=v2,j=v3,k=v1,k=v2,k=v3",
+		},
+		{
+			Args{"=,\\": []string{"=", ",", "\\"}},
+			"\\=\\,\\\\=\\=,\\=\\,\\\\=\\,,\\=\\,\\\\=\\\\",
+		},
+		{
+			Args{"secret": []string{"yes"}},
+			"secret=yes",
+		},
+		{
+			Args{"secret": []string{"nou"}, "cache": []string{"/tmp/cache"}},
+			"cache=/tmp/cache,secret=nou",
+		},
+	}
+
+	for _, test := range tests {
+		encoded := encodeSmethodArgs(test.args)
+		if encoded != test.expected {
+			t.Errorf("%q → %q (expected %q)", test.args, encoded, test.expected)
+		}
+	}
+}
