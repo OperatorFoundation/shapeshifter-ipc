@@ -164,7 +164,7 @@ type ptErr struct {
 
 // Implements the error interface.
 func (err *ptErr) Error() string {
-	return formatLine(err.Keyword, err.Args...)
+	return formatline(err.Keyword, err.Args...)
 }
 
 func getenv(key string) string {
@@ -175,7 +175,7 @@ func getenv(key string) string {
 func getenvRequired(key string) (string, error) {
 	value := os.Getenv(key)
 	if value == "" {
-		return "", EnvError(fmt.Sprintf("no %s environment variable", key))
+		return "", envError(fmt.Sprintf("no %s environment variable", key))
 	}
 	return value, nil
 }
@@ -198,7 +198,7 @@ func escape(s string) string {
 	return buf.String()
 }
 
-func formatLine(keyword string, v ...string) string {
+func formatline(keyword string, v ...string) string {
 	var buf bytes.Buffer
 	buf.WriteString(keyword)
 	for _, x := range v {
@@ -209,25 +209,25 @@ func formatLine(keyword string, v ...string) string {
 
 // Print a pluggable transports protocol line to Stdout. The line consists of an
 // unescaped keyword, followed by any number of escaped strings.
-func Line(keyword string, v ...string) {
-	fmt.Fprintln(Stdout, formatLine(keyword, v...))
+func line(keyword string, v ...string) {
+	fmt.Fprintln(Stdout, formatline(keyword, v...))
 }
 
 // Emit and return the given error as a ptErr.
 func doError(keyword string, v ...string) *ptErr {
-	Line(keyword, v...)
+	line(keyword, v...)
 	return &ptErr{keyword, v}
 }
 
 // Emit an ENV-ERROR line with explanation text. Returns a representation of the
 // error.
-func EnvError(msg string) error {
+func envError(msg string) error {
 	return doError("ENV-ERROR", msg)
 }
 
 // Emit a VERSION-ERROR line with explanation text. Returns a representation of
 // the error.
-func VersionError(msg string) error {
+func versionError(msg string) error {
 	return doError("VERSION-ERROR", msg)
 }
 
@@ -246,22 +246,22 @@ func SmethodError(methodName, msg string) error {
 // Emit a CMETHOD line. socks must be "socks4" or "socks5". Call this once for
 // each listening client SOCKS port.
 func Cmethod(name string, socks string, addr net.Addr) {
-	Line("CMETHOD", name, socks, addr.String())
+	line("CMETHOD", name, socks, addr.String())
 }
 
 // Emit a CMETHODS DONE line. Call this after opening all client listeners.
 func CmethodsDone() {
-	Line("CMETHODS", "DONE")
+	line("CMETHODS", "DONE")
 }
 
 // Emit an SMETHOD line. Call this once for each listening server port.
 func Smethod(name string, addr net.Addr) {
-	Line("SMETHOD", name, addr.String())
+	line("SMETHOD", name, addr.String())
 }
 
 // Emit an SMETHODS DONE line. Call this after opening all server listeners.
 func SmethodsDone() {
-	Line("SMETHODS", "DONE")
+	line("SMETHODS", "DONE")
 }
 
 // Get a pluggable transports version offered by Tor and understood by us, if
@@ -278,7 +278,7 @@ func getManagedTransportVer() (string, error) {
 			return offered, nil
 		}
 	}
-	return "", VersionError("no-version")
+	return "", versionError("no-version")
 }
 
 // Get the intersection of the method names offered by Tor and those in
@@ -320,7 +320,7 @@ func ClientSetup(methodNames []string) (ClientInfo, error) {
 	if err != nil {
 		return info, err
 	}
-	Line("VERSION", ver)
+	line("VERSION", ver)
 
 	info.MethodNames, err = getClientTransports(methodNames)
 	if err != nil {
@@ -406,12 +406,12 @@ func getServerBindaddrs(methodNames []string) ([]Bindaddr, error) {
 
 		parts := strings.SplitN(spec, "-", 2)
 		if len(parts) != 2 {
-			return nil, EnvError(fmt.Sprintf("TOR_PT_SERVER_BINDADDR: %q: doesn't contain \"-\"", spec))
+			return nil, envError(fmt.Sprintf("TOR_PT_SERVER_BINDADDR: %q: doesn't contain \"-\"", spec))
 		}
 		bindaddr.MethodName = parts[0]
 		addr, err := resolveAddr(parts[1])
 		if err != nil {
-			return nil, EnvError(fmt.Sprintf("TOR_PT_SERVER_BINDADDR: %q: %s", spec, err.Error()))
+			return nil, envError(fmt.Sprintf("TOR_PT_SERVER_BINDADDR: %q: %s", spec, err.Error()))
 		}
 		bindaddr.Addr = addr
 		result = append(result, bindaddr)
@@ -489,7 +489,7 @@ func ServerSetup(methodNames []string) (ServerInfo, error) {
 	if err != nil {
 		return info, err
 	}
-	Line("VERSION", ver)
+	line("VERSION", ver)
 
 	orPort, err := getenvRequired("TOR_PT_ORPORT")
 	if err != nil {
@@ -497,7 +497,7 @@ func ServerSetup(methodNames []string) (ServerInfo, error) {
 	}
 	info.OrAddr, err = resolveAddr(orPort)
 	if err != nil {
-		return info, EnvError(fmt.Sprintf("cannot resolve TOR_PT_ORPORT %q: %s", orPort, err.Error()))
+		return info, envError(fmt.Sprintf("cannot resolve TOR_PT_ORPORT %q: %s", orPort, err.Error()))
 	}
 
 	info.Bindaddrs, err = getServerBindaddrs(methodNames)
@@ -509,7 +509,7 @@ func ServerSetup(methodNames []string) (ServerInfo, error) {
 	if extendedOrPort != "" {
 		info.ExtendedOrAddr, err = resolveAddr(extendedOrPort)
 		if err != nil {
-			return info, EnvError(fmt.Sprintf("cannot resolve TOR_PT_EXTENDED_SERVER_PORT %q: %s", extendedOrPort, err.Error()))
+			return info, envError(fmt.Sprintf("cannot resolve TOR_PT_EXTENDED_SERVER_PORT %q: %s", extendedOrPort, err.Error()))
 		}
 	}
 
@@ -517,7 +517,7 @@ func ServerSetup(methodNames []string) (ServerInfo, error) {
 	if authCookieFilename != "" {
 		info.AuthCookie, err = readAuthCookieFile(authCookieFilename)
 		if err != nil {
-			return info, EnvError(fmt.Sprintf("error reading TOR_PT_AUTH_COOKIE_FILE %q: %s", authCookieFilename, err.Error()))
+			return info, envError(fmt.Sprintf("error reading TOR_PT_AUTH_COOKIE_FILE %q: %s", authCookieFilename, err.Error()))
 		}
 	}
 
