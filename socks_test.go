@@ -107,3 +107,40 @@ func TestReadSocks4aConnect(t *testing.T) {
 		}
 	}
 }
+
+func TestSendSocks4aResponse(t *testing.T) {
+	tests := [...]struct {
+		code     byte
+		addr     net.TCPAddr
+		expected []byte
+	}{
+		{
+			socksRequestGranted,
+			net.TCPAddr{IP: net.ParseIP("1.2.3.4"), Port: 0x1234},
+			[]byte("\x00\x5a\x12\x34\x01\x02\x03\x04"),
+		},
+		{
+			socksRequestRejected,
+			net.TCPAddr{IP: net.ParseIP("1:2::3:4"), Port: 0x1234},
+			[]byte("\x00\x5b\x12\x34\x00\x00\x00\x00"),
+		},
+	}
+
+	for _, test := range tests {
+		var buf bytes.Buffer
+		err := sendSocks4aResponse(&buf, test.code, &test.addr)
+		if err != nil {
+			t.Errorf("0x%02x %s unexpectedly returned an error: %s", test.code, test.addr, err)
+		}
+		p := make([]byte, 1024)
+		n, err := buf.Read(p)
+		if err != nil {
+			t.Fatal(err)
+		}
+		output := p[:n]
+		if !bytes.Equal(output, test.expected) {
+			t.Errorf("0x%02x %s → %v (expected %v)",
+				test.code, test.addr, output, test.expected)
+		}
+	}
+}
