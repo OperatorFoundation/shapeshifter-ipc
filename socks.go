@@ -58,9 +58,7 @@ func (conn *SocksConn) Reject() error {
 // 		if err != nil {
 // 			return err
 // 		}
-//
 // 		// do something with conn and remote
-//
 // 		return nil
 // 	}
 // 	...
