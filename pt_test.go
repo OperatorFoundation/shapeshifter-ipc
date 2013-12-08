@@ -496,7 +496,7 @@ func TestExtOrSendUserAddr(t *testing.T) {
 		}
 		// test that parsing the address gives something equivalent to
 		// the original.
-		outputAddr, err := resolveAddr(string(p))
+		outputAddr, err := resolveAddr(string(p[:n]))
 		if err != nil {
 			t.Fatal(err)
 		}
