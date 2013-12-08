@@ -34,11 +34,12 @@
 // 		os.Exit(1)
 // 	}
 // 	for _, bindaddr := range ptInfo.Bindaddrs {
-// 		ln, err := startListener(bindaddr.Addr, bindaddr.MethodName)
+// 		ln, err := net.ListenTCP("tcp", bindaddr.Addr)
 // 		if err != nil {
 // 			pt.SmethodError(bindaddr.MethodName, err.Error())
 // 			continue
 // 		}
+// 		go acceptLoop(ln)
 // 		pt.Smethod(bindaddr.MethodName, ln.Addr())
 // 	}
 // 	pt.SmethodsDone()

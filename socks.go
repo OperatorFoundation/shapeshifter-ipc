@@ -43,19 +43,20 @@ func (conn *SocksConn) Reject() error {
 //
 // 	func handleConn(conn *pt.SocksConn) error {
 // 		defer conn.Close()
-//
 // 		remote, err := net.Dial("tcp", conn.Req.Target)
 // 		if err != nil {
 // 			conn.Reject()
 // 			return err
 // 		}
+// 		defer remote.Close()
 // 		err = conn.Grant(remote.RemoteAddr().(*net.TCPAddr))
 // 		if err != nil {
 // 			return err
 // 		}
-// 		defer remote.Close()
 //
 // 		// do something with conn and remote
+//
+// 		return nil
 // 	}
 // 	...
 // 	ln, err := pt.ListenSocks("tcp", "127.0.0.1:0")

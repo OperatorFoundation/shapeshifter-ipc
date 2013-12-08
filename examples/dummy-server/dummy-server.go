@@ -44,7 +44,9 @@ func copyLoop(a, b net.Conn) {
 	wg.Wait()
 }
 
-func handleConnection(conn net.Conn) {
+func handleConnection(conn net.Conn) error {
+	defer conn.Close()
+
 	handlerChan <- 1
 	defer func() {
 		handlerChan <- -1
@@ -52,9 +54,13 @@ func handleConnection(conn net.Conn) {
 
 	or, err := pt.ConnectOr(&ptInfo, conn.RemoteAddr(), "dummy")
 	if err != nil {
-		return
+		return err
 	}
+	defer or.Close()
+
 	copyLoop(conn, or)
+
+	return nil
 }
 
 func acceptLoop(ln net.Listener) error {
@@ -68,15 +74,6 @@ func acceptLoop(ln net.Listener) error {
 	return nil
 }
 
-func startListener(addr *net.TCPAddr) (net.Listener, error) {
-	ln, err := net.ListenTCP("tcp", addr)
-	if err != nil {
-		return nil, err
-	}
-	go acceptLoop(ln)
-	return ln, nil
-}
-
 func main() {
 	var err error
 
@@ -87,11 +84,12 @@ func main() {
 
 	listeners := make([]net.Listener, 0)
 	for _, bindaddr := range ptInfo.Bindaddrs {
-		ln, err := startListener(bindaddr.Addr)
+		ln, err := net.ListenTCP("tcp", bindaddr.Addr)
 		if err != nil {
 			pt.SmethodError(bindaddr.MethodName, err.Error())
 			continue
 		}
+		go acceptLoop(ln)
 		pt.Smethod(bindaddr.MethodName, ln.Addr())
 		listeners = append(listeners, ln)
 	}

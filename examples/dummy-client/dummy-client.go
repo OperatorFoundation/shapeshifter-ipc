@@ -43,26 +43,25 @@ func copyLoop(a, b net.Conn) {
 	wg.Wait()
 }
 
-func handleConnection(local *pt.SocksConn) error {
-	defer local.Close()
-
+func handleConnection(conn *pt.SocksConn) error {
 	handlerChan <- 1
 	defer func() {
 		handlerChan <- -1
 	}()
 
-	remote, err := net.Dial("tcp", local.Req.Target)
+	defer conn.Close()
+	remote, err := net.Dial("tcp", conn.Req.Target)
 	if err != nil {
-		local.Reject()
+		conn.Reject()
 		return err
 	}
-	err = local.Grant(remote.RemoteAddr().(*net.TCPAddr))
+	defer remote.Close()
+	err = conn.Grant(remote.RemoteAddr().(*net.TCPAddr))
 	if err != nil {
 		return err
 	}
 
-	defer remote.Close()
-	copyLoop(local, remote)
+	copyLoop(conn, remote)
 
 	return nil
 }
@@ -78,15 +77,6 @@ func acceptLoop(ln *pt.SocksListener) error {
 	return nil
 }
 
-func startListener(addr string) (net.Listener, error) {
-	ln, err := pt.ListenSocks("tcp", addr)
-	if err != nil {
-		return nil, err
-	}
-	go acceptLoop(ln)
-	return ln, nil
-}
-
 func main() {
 	var err error
 
@@ -97,11 +87,12 @@ func main() {
 
 	listeners := make([]net.Listener, 0)
 	for _, methodName := range ptInfo.MethodNames {
-		ln, err := startListener("127.0.0.1:0")
+		ln, err := pt.ListenSocks("tcp", "127.0.0.1:0")
 		if err != nil {
 			pt.CmethodError(methodName, err.Error())
 			continue
 		}
+		go acceptLoop(ln)
 		pt.Cmethod(methodName, "socks4", ln.Addr())
 		listeners = append(listeners, ln)
 	}
