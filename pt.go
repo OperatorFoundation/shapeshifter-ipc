@@ -743,10 +743,10 @@ func extOrPortSetup(s io.ReadWriter, addr net.Addr, methodName string) error {
 }
 
 // Connect to info.ExtendedOrAddr if defined, or else info.OrAddr, and return an
-// open *net.TCPConn. If connecting to the extended OR port, extended OR port
+// open net.Conn. If connecting to the extended OR port, extended OR port
 // authentication à la 217-ext-orport-auth.txt is done before returning; an
 // error is returned if authentication fails.
-func ConnectOr(info *ServerInfo, addr net.Addr, methodName string) (*net.TCPConn, error) {
+func ConnectOr(info *ServerInfo, addr net.Addr, methodName string) (net.Conn, error) {
 	if info.ExtendedOrAddr == nil {
 		return net.DialTCP("tcp", nil, info.OrAddr)
 	}
