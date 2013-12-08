@@ -201,6 +201,10 @@ func TestResolveAddr(t *testing.T) {
 		"1:2:3:4::9999",
 		"localhost:9999",
 		"[localhost]:9999",
+		"1.2.3.4:http",
+		"1.2.3.4:0x50",
+		"1.2.3.4:-65456",
+		"1.2.3.4:65536",
 	}
 	goodTests := [...]struct {
 		input    string
