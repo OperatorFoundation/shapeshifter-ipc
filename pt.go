@@ -116,6 +116,7 @@ import (
 	"io"
 	"net"
 	"os"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -344,6 +345,11 @@ type Bindaddr struct {
 	Options Args
 }
 
+func parsePort(portStr string) (int, error) {
+	port, err := strconv.ParseUint(portStr, 10, 16)
+	return int(port), err
+}
+
 // Resolve an address string into a net.TCPAddr. We are a bit more strict than
 // net.ResolveTCPAddr; we don't allow an empty host or port, and the host part
 // must be a literal IP address.
@@ -373,7 +379,7 @@ func resolveAddr(addrStr string) (*net.TCPAddr, error) {
 	if ip == nil {
 		return nil, net.InvalidAddrError(fmt.Sprintf("not an IP string: %q", ipStr))
 	}
-	port, err := net.LookupPort("tcp", portStr)
+	port, err := parsePort(portStr)
 	if err != nil {
 		return nil, err
 	}
