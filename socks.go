@@ -22,6 +22,8 @@ type SocksRequest struct {
 	Username string
 	// The endpoint requested by the client as a "host:port" string.
 	Target string
+	// The parsed contents of Username as a key–value mapping.
+	Args Args
 }
 
 // SocksConn encapsulates a net.Conn and information associated with a SOCKS request.
@@ -144,6 +146,11 @@ func readSocks4aConnect(s io.Reader) (req SocksRequest, err error) {
 		return
 	}
 	req.Username = string(usernameBytes[:len(usernameBytes)-1])
+
+	req.Args, err = parseClientParameters(req.Username)
+	if err != nil {
+		return
+	}
 
 	var port int
 	var host string

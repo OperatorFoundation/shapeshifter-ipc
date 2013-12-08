@@ -12,13 +12,15 @@ func TestReadSocks4aConnect(t *testing.T) {
 		// missing userid
 		[]byte("\x04\x01\x12\x34\x01\x02\x03\x04"),
 		// missing \x00 after userid
-		[]byte("\x04\x01\x12\x34\x01\x02\x03\x04userid"),
+		[]byte("\x04\x01\x12\x34\x01\x02\x03\x04key=value"),
 		// missing hostname
-		[]byte("\x04\x01\x12\x34\x00\x00\x00\x01userid\x00"),
+		[]byte("\x04\x01\x12\x34\x00\x00\x00\x01key=value\x00"),
 		// missing \x00 after hostname
-		[]byte("\x04\x01\x12\x34\x00\x00\x00\x01userid\x00hostname"),
+		[]byte("\x04\x01\x12\x34\x00\x00\x00\x01key=value\x00hostname"),
+		// bad name–value mapping
+		[]byte("\x04\x01\x12\x34\x00\x00\x00\x01userid\x00hostname\x00"),
 		// BIND request
-		[]byte("\x04\x02\x12\x34\x01\x02\x03\x04userid\x00"),
+		[]byte("\x04\x02\x12\x34\x01\x02\x03\x04\x00"),
 		// SOCKS5
 		[]byte("\x05\x01\x00"),
 	}
@@ -28,8 +30,8 @@ func TestReadSocks4aConnect(t *testing.T) {
 		addr   net.TCPAddr
 	}{
 		{
-			[]byte("\x04\x01\x12\x34\x01\x02\x03\x04userid\x00"),
-			"userid", net.TCPAddr{IP: net.ParseIP("1.2.3.4"), Port: 0x1234},
+			[]byte("\x04\x01\x12\x34\x01\x02\x03\x04key=value\x00"),
+			"key=value", net.TCPAddr{IP: net.ParseIP("1.2.3.4"), Port: 0x1234},
 		},
 		{
 			[]byte("\x04\x01\x12\x34\x01\x02\x03\x04\x00"),
@@ -42,16 +44,16 @@ func TestReadSocks4aConnect(t *testing.T) {
 		target string
 	}{
 		{
-			[]byte("\x04\x01\x12\x34\x00\x00\x00\x01userid\x00hostname\x00"),
-			"userid", "hostname:4660",
+			[]byte("\x04\x01\x12\x34\x00\x00\x00\x01key=value\x00hostname\x00"),
+			"key=value", "hostname:4660",
 		},
 		{
 			[]byte("\x04\x01\x12\x34\x00\x00\x00\x01\x00hostname\x00"),
 			"", "hostname:4660",
 		},
 		{
-			[]byte("\x04\x01\x12\x34\x00\x00\x00\x01userid\x00\x00"),
-			"userid", ":4660",
+			[]byte("\x04\x01\x12\x34\x00\x00\x00\x01key=value\x00\x00"),
+			"key=value", ":4660",
 		},
 		{
 			[]byte("\x04\x01\x12\x34\x00\x00\x00\x01\x00\x00"),
@@ -88,6 +90,9 @@ func TestReadSocks4aConnect(t *testing.T) {
 			t.Errorf("%q → address %s (expected %s)", test.input,
 				req.Target, test.addr.String())
 		}
+		if req.Args == nil {
+			t.Errorf("%q → unexpected nil Args from username %q", test.input, req.Username)
+		}
 	}
 
 	for _, test := range hostnameTests {
@@ -104,6 +109,9 @@ func TestReadSocks4aConnect(t *testing.T) {
 		if req.Target != test.target {
 			t.Errorf("%q → target %q (expected %q)", test.input,
 				req.Target, test.target)
+		}
+		if req.Args == nil {
+			t.Errorf("%q → unexpected nil Args from username %q", test.input, req.Username)
 		}
 	}
 }
