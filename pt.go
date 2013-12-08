@@ -319,18 +319,16 @@ type ClientInfo struct {
 // Check the client pluggable transports environments, emitting an error message
 // and returning a non-nil error if any error is encountered. Returns a
 // ClientInfo struct.
-func ClientSetup(methodNames []string) (ClientInfo, error) {
-	var info ClientInfo
-
+func ClientSetup(methodNames []string) (info ClientInfo, err error) {
 	ver, err := getManagedTransportVer()
 	if err != nil {
-		return info, err
+		return
 	}
 	line("VERSION", ver)
 
 	info.MethodNames, err = getClientTransports(methodNames)
 	if err != nil {
-		return info, err
+		return
 	}
 
 	return info, nil
@@ -500,34 +498,34 @@ type ServerInfo struct {
 // and returning a non-nil error if any error is encountered. Resolves the
 // various requested bind addresses, the server ORPort and extended ORPort, and
 // reads the auth cookie file. Returns a ServerInfo struct.
-func ServerSetup(methodNames []string) (ServerInfo, error) {
-	var info ServerInfo
-
+func ServerSetup(methodNames []string) (info ServerInfo, err error) {
 	ver, err := getManagedTransportVer()
 	if err != nil {
-		return info, err
+		return
 	}
 	line("VERSION", ver)
 
 	orPort, err := getenvRequired("TOR_PT_ORPORT")
 	if err != nil {
-		return info, err
+		return
 	}
 	info.OrAddr, err = resolveAddr(orPort)
 	if err != nil {
-		return info, envError(fmt.Sprintf("cannot resolve TOR_PT_ORPORT %q: %s", orPort, err.Error()))
+		err = envError(fmt.Sprintf("cannot resolve TOR_PT_ORPORT %q: %s", orPort, err.Error()))
+		return
 	}
 
 	info.Bindaddrs, err = getServerBindaddrs(methodNames)
 	if err != nil {
-		return info, err
+		return
 	}
 
 	var extendedOrPort = getenv("TOR_PT_EXTENDED_SERVER_PORT")
 	if extendedOrPort != "" {
 		info.ExtendedOrAddr, err = resolveAddr(extendedOrPort)
 		if err != nil {
-			return info, envError(fmt.Sprintf("cannot resolve TOR_PT_EXTENDED_SERVER_PORT %q: %s", extendedOrPort, err.Error()))
+			err = envError(fmt.Sprintf("cannot resolve TOR_PT_EXTENDED_SERVER_PORT %q: %s", extendedOrPort, err.Error()))
+			return
 		}
 	}
 
@@ -535,7 +533,8 @@ func ServerSetup(methodNames []string) (ServerInfo, error) {
 	if authCookieFilename != "" {
 		info.AuthCookie, err = readAuthCookieFile(authCookieFilename)
 		if err != nil {
-			return info, envError(fmt.Sprintf("error reading TOR_PT_AUTH_COOKIE_FILE %q: %s", authCookieFilename, err.Error()))
+			err = envError(fmt.Sprintf("error reading TOR_PT_AUTH_COOKIE_FILE %q: %s", authCookieFilename, err.Error()))
+			return
 		}
 	}
 
