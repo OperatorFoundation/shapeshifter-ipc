@@ -341,6 +341,9 @@ func ClientSetup(methodNames []string) (ClientInfo, error) {
 type Bindaddr struct {
 	MethodName string
 	Addr       *net.TCPAddr
+	// Options from TOR_PT_SERVER_TRANSPORT_OPTIONS that pertain to this
+	// transport.
+	Options Args
 }
 
 // Resolve an address string into a net.TCPAddr. We are a bit more strict than
@@ -398,9 +401,17 @@ func filterBindaddrs(addrs []Bindaddr, methodNames []string) []Bindaddr {
 
 // Return an array of Bindaddrs, those being the contents of
 // TOR_PT_SERVER_BINDADDR, with keys filtered by TOR_PT_SERVER_TRANSPORTS, and
-// further filtered by the methods in methodNames.
+// further filtered by the methods in methodNames. Transport-specific options
+// from TOR_PT_SERVER_TRANSPORT_OPTIONS are assigned to the Options member.
 func getServerBindaddrs(methodNames []string) ([]Bindaddr, error) {
 	var result []Bindaddr
+
+	// Parse the list of server transport options.
+	serverTransportOptions := getenv("TOR_PT_SERVER_TRANSPORT_OPTIONS")
+	optionsMap, err := parseServerTransportOptions(serverTransportOptions)
+	if err != nil {
+		return nil, envError(fmt.Sprintf("TOR_PT_SERVER_TRANSPORT_OPTIONS: %q: %s", serverTransportOptions, err.Error()))
+	}
 
 	// Get the list of all requested bindaddrs.
 	serverBindaddr, err := getenvRequired("TOR_PT_SERVER_BINDADDR")
@@ -420,6 +431,7 @@ func getServerBindaddrs(methodNames []string) ([]Bindaddr, error) {
 			return nil, envError(fmt.Sprintf("TOR_PT_SERVER_BINDADDR: %q: %s", spec, err.Error()))
 		}
 		bindaddr.Addr = addr
+		bindaddr.Options = optionsMap[bindaddr.MethodName]
 		result = append(result, bindaddr)
 	}
 

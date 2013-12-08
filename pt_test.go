@@ -280,8 +280,8 @@ func TestGetServerBindaddrs(t *testing.T) {
 			"alpha,beta,gamma",
 			[]string{"alpha", "beta"},
 			[]Bindaddr{
-				{"alpha", &net.TCPAddr{IP: net.ParseIP("1.2.3.4"), Port: 1111}},
-				{"beta", &net.TCPAddr{IP: net.ParseIP("1:2::3:4"), Port: 2222}},
+				{MethodName: "alpha", Addr: &net.TCPAddr{IP: net.ParseIP("1.2.3.4"), Port: 1111}},
+				{MethodName: "beta", Addr: &net.TCPAddr{IP: net.ParseIP("1:2::3:4"), Port: 2222}},
 			},
 		},
 		{
@@ -301,8 +301,8 @@ func TestGetServerBindaddrs(t *testing.T) {
 			"*",
 			[]string{"alpha", "beta"},
 			[]Bindaddr{
-				{"alpha", &net.TCPAddr{IP: net.ParseIP("1.2.3.4"), Port: 1111}},
-				{"beta", &net.TCPAddr{IP: net.ParseIP("1:2::3:4"), Port: 2222}},
+				{MethodName: "alpha", Addr: &net.TCPAddr{IP: net.ParseIP("1.2.3.4"), Port: 1111}},
+				{MethodName: "beta", Addr: &net.TCPAddr{IP: net.ParseIP("1:2::3:4"), Port: 2222}},
 			},
 		},
 		{
@@ -310,8 +310,8 @@ func TestGetServerBindaddrs(t *testing.T) {
 			"trebuchet,ballista",
 			[]string{"trebuchet", "ballista"},
 			[]Bindaddr{
-				{"trebuchet", &net.TCPAddr{IP: net.ParseIP("127.0.0.1"), Port: 1984}},
-				{"ballista", &net.TCPAddr{IP: net.ParseIP("127.0.0.1"), Port: 4891}},
+				{MethodName: "trebuchet", Addr: &net.TCPAddr{IP: net.ParseIP("127.0.0.1"), Port: 1984}},
+				{MethodName: "ballista", Addr: &net.TCPAddr{IP: net.ParseIP("127.0.0.1"), Port: 4891}},
 			},
 		},
 	}
