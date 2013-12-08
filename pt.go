@@ -136,11 +136,11 @@ func (w syncWriter) Write(p []byte) (n int, err error) {
 	return
 }
 
-// Writer to which pluggable-transport negotiation messages are written. It
+// Writer to which pluggable transports negotiation messages are written. It
 // defaults to a Writer that writes to os.Stdout and calls Sync after each
 // write.
 //
-// You may, for example, log pluggable-transport messages by defining a Writer
+// You may, for example, log pluggable transports messages by defining a Writer
 // that logs what is written to it:
 // 	type logWriteWrapper struct {
 // 		io.Writer
@@ -316,7 +316,7 @@ type ClientInfo struct {
 	MethodNames []string
 }
 
-// Check the client pluggable transports environments, emitting an error message
+// Check the client pluggable transports environment, emitting an error message
 // and returning a non-nil error if any error is encountered. Returns a
 // ClientInfo struct.
 func ClientSetup(methodNames []string) (info ClientInfo, err error) {
@@ -494,7 +494,7 @@ type ServerInfo struct {
 	AuthCookie     []byte
 }
 
-// Check the server pluggable transports environments, emitting an error message
+// Check the server pluggable transports environment, emitting an error message
 // and returning a non-nil error if any error is encountered. Resolves the
 // various requested bind addresses, the server ORPort and extended ORPort, and
 // reads the auth cookie file. Returns a ServerInfo struct.
