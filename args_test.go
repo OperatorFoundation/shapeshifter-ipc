@@ -162,6 +162,14 @@ func TestParseClientParameters(t *testing.T) {
 			"a\\=b=c",
 			Args{"a=b": []string{"c"}},
 		},
+		{
+			"shared-secret=rahasia;secrets-file=/tmp/blob",
+			Args{"shared-secret": []string{"rahasia"}, "secrets-file": []string{"/tmp/blob"}},
+		},
+		{
+			"rocks=20;height=5.6",
+			Args{"rocks": []string{"20"}, "height": []string{"5.6"}},
+		},
 	}
 
 	for _, input := range badTests {

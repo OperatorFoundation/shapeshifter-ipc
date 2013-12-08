@@ -305,6 +305,15 @@ func TestGetServerBindaddrs(t *testing.T) {
 				{"beta", &net.TCPAddr{IP: net.ParseIP("1:2::3:4"), Port: 2222}},
 			},
 		},
+		{
+			"trebuchet-127.0.0.1:1984,ballista-127.0.0.1:4891",
+			"trebuchet,ballista",
+			[]string{"trebuchet", "ballista"},
+			[]Bindaddr{
+				{"trebuchet", &net.TCPAddr{IP: net.ParseIP("127.0.0.1"), Port: 1984}},
+				{"ballista", &net.TCPAddr{IP: net.ParseIP("127.0.0.1"), Port: 4891}},
+			},
+		},
 	}
 
 	Stdout = ioutil.Discard
