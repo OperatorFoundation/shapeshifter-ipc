@@ -264,14 +264,14 @@ func Smethod(name string, addr net.Addr) {
 // will be added to the server's extrainfo document.
 //
 // This is an example of how to check for a required option:
-// 	args := pt.Args{}
 // 	secret, ok := bindaddr.Options.Get("shared-secret")
-// 	if !ok {
+// 	if ok {
+// 		args := pt.Args{}
+// 		args.Add("shared-secret", secret)
+// 		pt.SmethodArgs(bindaddr.MethodName, ln.Addr(), args)
+// 	} else {
 // 		pt.SmethodError(bindaddr.MethodName, "need a shared-secret option")
-// 		continue
 // 	}
-// 	args.Add("shared-secret", secret)
-// 	pt.SmethodArgs(bindaddr.MethodName, ln.Addr(), args)
 // Or, if you just want to echo back the options provided by Tor from the
 // TransportServerOptions configuration,
 // 	pt.SmethodArgs(bindaddr.MethodName, ln.Addr(), bindaddr.Options)
