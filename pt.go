@@ -95,6 +95,9 @@
 // Tor pluggable transports specification:
 // https://gitweb.torproject.org/torspec.git/blob/HEAD:/pt-spec.txt.
 //
+// Extended ORPort:
+// https://gitweb.torproject.org/torspec.git/blob/HEAD:/proposals/196-transport-control-ports.txt.
+//
 // Extended ORPort Authentication:
 // https://gitweb.torproject.org/torspec.git/blob/HEAD:/proposals/217-ext-orport-auth.txt.
 //
