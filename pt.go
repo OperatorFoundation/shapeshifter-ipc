@@ -773,7 +773,7 @@ func extOrPortSetup(s io.ReadWriter, addr net.Addr, methodName string) error {
 // authentication à la 217-ext-orport-auth.txt is done before returning; an
 // error is returned if authentication fails.
 func DialOr(info *ServerInfo, addr net.Addr, methodName string) (net.Conn, error) {
-	if info.ExtendedOrAddr == nil {
+	if info.ExtendedOrAddr == nil || info.AuthCookie == nil {
 		return net.DialTCP("tcp", nil, info.OrAddr)
 	}
 
