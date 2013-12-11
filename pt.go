@@ -52,7 +52,7 @@
 // 	...
 // 	func handler(conn net.Conn) error {
 // 		defer conn.Close()
-// 		or, err := pt.ConnectOr(&ptInfo, conn.RemoteAddr(), "foo")
+// 		or, err := pt.DialOr(&ptInfo, conn.RemoteAddr(), "foo")
 // 		if err != nil {
 // 			return
 // 		}
@@ -764,11 +764,11 @@ func extOrPortSetup(s io.ReadWriter, addr net.Addr, methodName string) error {
 	return nil
 }
 
-// Connect to info.ExtendedOrAddr if defined, or else info.OrAddr, and return an
-// open net.Conn. If connecting to the extended OR port, extended OR port
+// Dial info.ExtendedOrAddr if defined, or else info.OrAddr, and return an open
+// net.Conn. If connecting to the extended OR port, extended OR port
 // authentication à la 217-ext-orport-auth.txt is done before returning; an
 // error is returned if authentication fails.
-func ConnectOr(info *ServerInfo, addr net.Addr, methodName string) (net.Conn, error) {
+func DialOr(info *ServerInfo, addr net.Addr, methodName string) (net.Conn, error) {
 	if info.ExtendedOrAddr == nil {
 		return net.DialTCP("tcp", nil, info.OrAddr)
 	}
