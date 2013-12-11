@@ -559,7 +559,7 @@ func ServerSetup(methodNames []string) (info ServerInfo, err error) {
 	}
 
 	// Need either OrAddr or ExtendedOrAddr.
-	if (info.OrAddr == nil && (info.ExtendedOrAddr == nil || info.AuthCookie == nil)) {
+	if info.OrAddr == nil && (info.ExtendedOrAddr == nil || info.AuthCookie == nil) {
 		err = envError("need TOR_PT_ORPORT or TOR_PT_EXTENDED_SERVER_PORT environment variable")
 		return
 	}
