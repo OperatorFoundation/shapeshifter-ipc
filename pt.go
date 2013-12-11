@@ -541,7 +541,7 @@ func ServerSetup(methodNames []string) (info ServerInfo, err error) {
 		}
 	}
 
-	var extendedOrPort = getenv("TOR_PT_EXTENDED_SERVER_PORT")
+	extendedOrPort := getenv("TOR_PT_EXTENDED_SERVER_PORT")
 	if extendedOrPort != "" {
 		info.ExtendedOrAddr, err = resolveAddr(extendedOrPort)
 		if err != nil {
@@ -549,7 +549,7 @@ func ServerSetup(methodNames []string) (info ServerInfo, err error) {
 			return
 		}
 	}
-	var authCookieFilename = getenv("TOR_PT_AUTH_COOKIE_FILE")
+	authCookieFilename := getenv("TOR_PT_AUTH_COOKIE_FILE")
 	if authCookieFilename != "" {
 		info.AuthCookie, err = readAuthCookieFile(authCookieFilename)
 		if err != nil {
