@@ -527,6 +527,11 @@ func ServerSetup(methodNames []string) (info ServerInfo, err error) {
 	}
 	line("VERSION", ver)
 
+	info.Bindaddrs, err = getServerBindaddrs(methodNames)
+	if err != nil {
+		return
+	}
+
 	orPort, err := getenvRequired("TOR_PT_ORPORT")
 	if err != nil {
 		return
@@ -534,11 +539,6 @@ func ServerSetup(methodNames []string) (info ServerInfo, err error) {
 	info.OrAddr, err = resolveAddr(orPort)
 	if err != nil {
 		err = envError(fmt.Sprintf("cannot resolve TOR_PT_ORPORT %q: %s", orPort, err.Error()))
-		return
-	}
-
-	info.Bindaddrs, err = getServerBindaddrs(methodNames)
-	if err != nil {
 		return
 	}
 
@@ -550,7 +550,6 @@ func ServerSetup(methodNames []string) (info ServerInfo, err error) {
 			return
 		}
 	}
-
 	var authCookieFilename = getenv("TOR_PT_AUTH_COOKIE_FILE")
 	if authCookieFilename != "" {
 		info.AuthCookie, err = readAuthCookieFile(authCookieFilename)
