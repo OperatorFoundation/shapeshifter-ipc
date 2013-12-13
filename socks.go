@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"net"
+	"time"
 )
 
 const (
@@ -15,6 +16,9 @@ const (
 	socksRequestGranted  = 0x5a
 	socksRequestRejected = 0x5b
 )
+
+// Put a sanity timeout on how long we wait for a SOCKS request.
+const socksRequestTimeout = 5 * time.Second
 
 // SocksRequest describes a SOCKS request.
 type SocksRequest struct {
@@ -108,9 +112,17 @@ func (ln *SocksListener) AcceptSocks() (*SocksConn, error) {
 	}
 	conn := new(SocksConn)
 	conn.Conn = c
+	err = conn.SetDeadline(time.Now().Add(socksRequestTimeout))
+	if err != nil {
+		return nil, err
+	}
 	conn.Req, err = readSocks4aConnect(conn)
 	if err != nil {
 		conn.Close()
+		return nil, err
+	}
+	err = conn.SetDeadline(time.Time{})
+	if err != nil {
 		return nil, err
 	}
 	return conn, nil
