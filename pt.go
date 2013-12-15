@@ -738,18 +738,23 @@ func extOrPortRecvCommand(s io.Reader) (cmd uint16, body []byte, err error) {
 }
 
 // Send USERADDR and TRANSPORT commands followed by a DONE command. Wait for an
-// OKAY or DENY response command from the server. Returns nil if and only if
-// OKAY is received.
+// OKAY or DENY response command from the server. If addr or methodName is "",
+// the corresponding command is not sent. Returns nil if and only if OKAY is
+// received.
 func extOrPortSetup(s io.ReadWriter, addr, methodName string) error {
 	var err error
 
-	err = extOrPortSendUserAddr(s, addr)
-	if err != nil {
-		return err
+	if addr != "" {
+		err = extOrPortSendUserAddr(s, addr)
+		if err != nil {
+			return err
+		}
 	}
-	err = extOrPortSendTransport(s, methodName)
-	if err != nil {
-		return err
+	if methodName != "" {
+		err = extOrPortSendTransport(s, methodName)
+		if err != nil {
+			return err
+		}
 	}
 	err = extOrPortSendDone(s)
 	if err != nil {
@@ -772,6 +777,10 @@ func extOrPortSetup(s io.ReadWriter, addr, methodName string) error {
 // *net.TCPConn. If connecting to the extended OR port, extended OR port
 // authentication à la 217-ext-orport-auth.txt is done before returning; an
 // error is returned if authentication fails.
+//
+// The addr and methodName arguments are put in USERADDR and TRANSPORT ExtOrPort
+// commands, respectively. If either is "", the corresponding command is not
+// sent.
 func DialOr(info *ServerInfo, addr, methodName string) (*net.TCPConn, error) {
 	if info.ExtendedOrAddr == nil || info.AuthCookie == nil {
 		return net.DialTCP("tcp", nil, info.OrAddr)

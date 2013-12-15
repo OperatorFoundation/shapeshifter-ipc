@@ -625,3 +625,59 @@ func TestExtOrPortRecvCommand(t *testing.T) {
 		}
 	}
 }
+
+// set up so that extOrPortSetup can write to one buffer and read from another.
+type MockSetupBuf struct {
+	bytes.Buffer
+	ReadBuf bytes.Buffer
+}
+
+func (buf *MockSetupBuf) Read(p []byte) (int, error) {
+	n, err := buf.ReadBuf.Read(p)
+	return n, err
+}
+
+func testExtOrPortSetupIndividual(t *testing.T, addr, methodName string) {
+	var err error
+	var buf MockSetupBuf
+	// fake an OKAY response.
+	err = extOrPortSendCommand(&buf.ReadBuf, extOrCmdOkay, []byte{})
+	if err != nil {
+		t.Fatal()
+	}
+	err = extOrPortSetup(&buf, addr, methodName)
+	if err != nil {
+		t.Fatalf("error in extOrPortSetup: %s", err)
+	}
+	for {
+		cmd, body, err := extOrPortRecvCommand(&buf.Buffer)
+		if err != nil {
+			t.Fatalf("error in extOrPortRecvCommand: %s", err)
+		}
+		if cmd == extOrCmdDone {
+			break
+		}
+		if addr != "" && cmd == extOrCmdUserAddr {
+			if string(body) != addr {
+				t.Errorf("addr=%q methodName=%q got USERADDR with body %q (expected %q)", addr, methodName, body, addr)
+			}
+			continue
+		}
+		if methodName != "" && cmd == extOrCmdTransport {
+			if string(body) != methodName {
+				t.Errorf("addr=%q methodName=%q got TRANSPORT with body %q (expected %q)", addr, methodName, body, methodName)
+			}
+			continue
+		}
+		t.Errorf("addr=%q methodName=%q got unknown cmd %d body %q", addr, methodName, cmd, body)
+	}
+}
+
+func TestExtOrPortSetup(t *testing.T) {
+	const addr = "127.0.0.1:40000"
+	const methodName = "alpha"
+	testExtOrPortSetupIndividual(t, "", "")
+	testExtOrPortSetupIndividual(t, addr, "")
+	testExtOrPortSetupIndividual(t, "", methodName)
+	testExtOrPortSetupIndividual(t, addr, methodName)
+}
