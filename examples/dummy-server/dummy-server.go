@@ -67,7 +67,10 @@ func acceptLoop(ln net.Listener) error {
 	for {
 		conn, err := ln.Accept()
 		if err != nil {
-			return err
+			if e, ok := err.(net.Error); ok && !e.Temporary() {
+				return err
+			}
+			continue
 		}
 		go handler(conn)
 	}

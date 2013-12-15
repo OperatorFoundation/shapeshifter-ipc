@@ -73,7 +73,11 @@ func (conn *SocksConn) Reject() error {
 // 	for {
 // 		conn, err := ln.AcceptSocks()
 // 		if err != nil {
-// 			break
+// 			log.Printf("accept error: %s", err)
+// 			if e, ok := err.(net.Error); ok && !e.Temporary() {
+// 				break
+// 			}
+// 			continue
 // 		}
 // 		go handleConn(conn)
 // 	}
@@ -105,6 +109,25 @@ func (ln *SocksListener) Accept() (net.Conn, error) {
 // Call Accept on the wrapped net.Listener, do SOCKS negotiation, and return a
 // SocksConn. After accepting, you must call either conn.Grant or conn.Reject
 // (presumably after trying to connect to conn.Req.Target).
+//
+// Errors returned by AcceptSocks may be temporary (for example, EOF while
+// reading the request, or a badly formatted userid string), or permanent (e.g.,
+// the underlying socket is closed). You can determine whether an error is
+// temporary and take appropriate action with a type conversion to net.Error.
+// For example:
+//
+// 	for {
+// 		conn, err := ln.AcceptSocks()
+// 		if err != nil {
+// 			if e, ok := err.(net.Error); ok && !e.Temporary() {
+// 				log.Printf("permanent accept error; giving up: %s", err)
+// 				break
+// 			}
+// 			log.Printf("temporary accept error; trying again: %s", err)
+// 			continue
+// 		}
+// 		go handleConn(conn)
+// 	}
 func (ln *SocksListener) AcceptSocks() (*SocksConn, error) {
 	c, err := ln.Listener.Accept()
 	if err != nil {
