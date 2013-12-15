@@ -52,7 +52,7 @@
 // 	...
 // 	func handler(conn net.Conn) error {
 // 		defer conn.Close()
-// 		or, err := pt.DialOr(&ptInfo, conn.RemoteAddr(), "foo")
+// 		or, err := pt.DialOr(&ptInfo, conn.RemoteAddr().String(), "foo")
 // 		if err != nil {
 // 			return
 // 		}
@@ -696,8 +696,8 @@ func extOrPortSendCommand(s io.Writer, cmd uint16, body []byte) error {
 
 // Send a USERADDR command on s. See section 3.1.2.1 of
 // 196-transport-control-ports.txt.
-func extOrPortSendUserAddr(s io.Writer, addr net.Addr) error {
-	return extOrPortSendCommand(s, extOrCmdUserAddr, []byte(addr.String()))
+func extOrPortSendUserAddr(s io.Writer, addr string) error {
+	return extOrPortSendCommand(s, extOrCmdUserAddr, []byte(addr))
 }
 
 // Send a TRANSPORT command on s. See section 3.1.2.2 of
@@ -740,7 +740,7 @@ func extOrPortRecvCommand(s io.Reader) (cmd uint16, body []byte, err error) {
 // Send USERADDR and TRANSPORT commands followed by a DONE command. Wait for an
 // OKAY or DENY response command from the server. Returns nil if and only if
 // OKAY is received.
-func extOrPortSetup(s io.ReadWriter, addr net.Addr, methodName string) error {
+func extOrPortSetup(s io.ReadWriter, addr, methodName string) error {
 	var err error
 
 	err = extOrPortSendUserAddr(s, addr)
@@ -772,7 +772,7 @@ func extOrPortSetup(s io.ReadWriter, addr net.Addr, methodName string) error {
 // *net.TCPConn. If connecting to the extended OR port, extended OR port
 // authentication à la 217-ext-orport-auth.txt is done before returning; an
 // error is returned if authentication fails.
-func DialOr(info *ServerInfo, addr net.Addr, methodName string) (*net.TCPConn, error) {
+func DialOr(info *ServerInfo, addr, methodName string) (*net.TCPConn, error) {
 	if info.ExtendedOrAddr == nil || info.AuthCookie == nil {
 		return net.DialTCP("tcp", nil, info.OrAddr)
 	}

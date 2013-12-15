@@ -469,17 +469,17 @@ func TestExtOrSendCommand(t *testing.T) {
 }
 
 func TestExtOrSendUserAddr(t *testing.T) {
-	addrs := [...]net.TCPAddr{
-		net.TCPAddr{IP: net.ParseIP("0.0.0.0"), Port: 0},
-		net.TCPAddr{IP: net.ParseIP("1.2.3.4"), Port: 9999},
-		net.TCPAddr{IP: net.ParseIP("255.255.255.255"), Port: 65535},
-		net.TCPAddr{IP: net.ParseIP("::"), Port: 0},
-		net.TCPAddr{IP: net.ParseIP("ffff:ffff:ffff:ffff:ffff:ffff:255.255.255.255"), Port: 65535},
+	addrs := [...]string{
+		"0.0.0.0:0",
+		"1.2.3.4:9999",
+		"255.255.255.255:65535",
+		"[::]:0",
+		"[ffff:ffff:ffff:ffff:ffff:ffff:255.255.255.255]:63335",
 	}
 
 	for _, addr := range addrs {
 		var buf bytes.Buffer
-		err := extOrPortSendUserAddr(&buf, &addr)
+		err := extOrPortSendUserAddr(&buf, addr)
 		if err != nil {
 			t.Errorf("%s unexpectedly returned an error: %s", addr, err)
 		}
@@ -495,12 +495,16 @@ func TestExtOrSendUserAddr(t *testing.T) {
 			t.Errorf("%s said length %d but had at least %d", addr, length, n)
 		}
 		// test that parsing the address gives something equivalent to
-		// the original.
+		// parsing the original.
+		inputAddr, err := resolveAddr(addr)
+		if err != nil {
+			t.Fatal(err)
+		}
 		outputAddr, err := resolveAddr(string(p[:n]))
 		if err != nil {
 			t.Fatal(err)
 		}
-		if !tcpAddrsEqual(&addr, outputAddr) {
+		if !tcpAddrsEqual(inputAddr, outputAddr) {
 			t.Errorf("%s → %s", addr, outputAddr)
 		}
 	}

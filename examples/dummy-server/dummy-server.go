@@ -52,7 +52,7 @@ func handler(conn net.Conn) error {
 		handlerChan <- -1
 	}()
 
-	or, err := pt.DialOr(&ptInfo, conn.RemoteAddr(), "dummy")
+	or, err := pt.DialOr(&ptInfo, conn.RemoteAddr().String(), "dummy")
 	if err != nil {
 		return err
 	}
