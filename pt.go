@@ -19,6 +19,7 @@
 // 		return nil
 // 	}
 // 	func acceptLoop(ln *pt.SocksListener) error {
+// 		defer ln.Close()
 // 		for {
 // 			conn, err := ln.AcceptSocks()
 // 			if err != nil {
@@ -64,6 +65,7 @@
 // 		return nil
 // 	}
 // 	func acceptLoop(ln net.Listener) error {
+// 		defer ln.Close()
 // 		for {
 // 			conn, err := ln.Accept()
 // 			if err != nil {

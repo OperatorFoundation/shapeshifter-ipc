@@ -67,6 +67,7 @@ func handler(conn *pt.SocksConn) error {
 }
 
 func acceptLoop(ln *pt.SocksListener) error {
+	defer ln.Close()
 	for {
 		conn, err := ln.AcceptSocks()
 		if err != nil {

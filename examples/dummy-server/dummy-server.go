@@ -64,6 +64,7 @@ func handler(conn net.Conn) error {
 }
 
 func acceptLoop(ln net.Listener) error {
+	defer ln.Close()
 	for {
 		conn, err := ln.Accept()
 		if err != nil {
