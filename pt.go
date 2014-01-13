@@ -427,11 +427,12 @@ func filterBindaddrs(addrs []Bindaddr, methodNames []string) []Bindaddr {
 	return result
 }
 
-// Return an array of Bindaddrs, those being the contents of
-// TOR_PT_SERVER_BINDADDR, with keys filtered by TOR_PT_SERVER_TRANSPORTS, and
-// further filtered by the methods in methodNames. Transport-specific options
-// from TOR_PT_SERVER_TRANSPORT_OPTIONS are assigned to the Options member.
-func getServerBindaddrs(methodNames []string) ([]Bindaddr, error) {
+// Return an array of Bindaddrs, being the contents of TOR_PT_SERVER_BINDADDR
+// with keys filtered by TOR_PT_SERVER_TRANSPORTS. If TOR_PT_SERVER_TRANSPORTS
+// is "*", then keys are filtered by the entries in star instead.
+// Transport-specific options from TOR_PT_SERVER_TRANSPORT_OPTIONS are assigned
+// to the Options member.
+func getServerBindaddrs(star []string) ([]Bindaddr, error) {
 	var result []Bindaddr
 
 	// Parse the list of server transport options.
@@ -468,12 +469,11 @@ func getServerBindaddrs(methodNames []string) ([]Bindaddr, error) {
 	if err != nil {
 		return nil, err
 	}
-	if serverTransports != "*" {
+	if serverTransports == "*" {
+		result = filterBindaddrs(result, star)
+	} else {
 		result = filterBindaddrs(result, strings.Split(serverTransports, ","))
 	}
-
-	// Finally filter by what we understand.
-	result = filterBindaddrs(result, methodNames)
 
 	return result, nil
 }
@@ -525,17 +525,18 @@ type ServerInfo struct {
 }
 
 // Check the server pluggable transports environment, emitting an error message
-// and returning a non-nil error if any error is encountered. Resolves the
-// various requested bind addresses, the server ORPort and extended ORPort, and
-// reads the auth cookie file. Returns a ServerInfo struct.
-func ServerSetup(methodNames []string) (info ServerInfo, err error) {
+// and returning a non-nil error if any error is encountered. star is the list
+// of method names to use in case "*" is requested by Tor. Resolves the various
+// requested bind addresses, the server ORPort and extended ORPort, and reads
+// the auth cookie file. Returns a ServerInfo struct.
+func ServerSetup(star []string) (info ServerInfo, err error) {
 	ver, err := getManagedTransportVer()
 	if err != nil {
 		return
 	}
 	line("VERSION", ver)
 
-	info.Bindaddrs, err = getServerBindaddrs(methodNames)
+	info.Bindaddrs, err = getServerBindaddrs(star)
 	if err != nil {
 		return
 	}

@@ -265,7 +265,7 @@ func TestGetServerBindaddrs(t *testing.T) {
 		ptServerBindaddr         string
 		ptServerTransports       string
 		ptServerTransportOptions string
-		methodNames              []string
+		star                     []string
 	}{
 		{
 			"xxx",
@@ -290,7 +290,7 @@ func TestGetServerBindaddrs(t *testing.T) {
 		ptServerBindaddr         string
 		ptServerTransports       string
 		ptServerTransportOptions string
-		methodNames              []string
+		star                     []string
 		expected                 []Bindaddr
 	}{
 		{
@@ -315,7 +315,9 @@ func TestGetServerBindaddrs(t *testing.T) {
 			"alpha,beta,gamma",
 			"",
 			[]string{},
-			[]Bindaddr{},
+			[]Bindaddr{
+				{"alpha", &net.TCPAddr{IP: net.ParseIP("1.2.3.4"), Port: 1111}, Args{}},
+			},
 		},
 		{
 			"alpha-1.2.3.4:1111,beta-[1:2::3:4]:2222",
@@ -325,6 +327,15 @@ func TestGetServerBindaddrs(t *testing.T) {
 			[]Bindaddr{
 				{"alpha", &net.TCPAddr{IP: net.ParseIP("1.2.3.4"), Port: 1111}, Args{}},
 				{"beta", &net.TCPAddr{IP: net.ParseIP("1:2::3:4"), Port: 2222}, Args{}},
+			},
+		},
+		{
+			"alpha-1.2.3.4:1111,beta-[1:2::3:4]:2222",
+			"*",
+			"",
+			[]string{"alpha", "gamma"},
+			[]Bindaddr{
+				{"alpha", &net.TCPAddr{IP: net.ParseIP("1.2.3.4"), Port: 1111}, Args{}},
 			},
 		},
 		{
@@ -351,10 +362,10 @@ func TestGetServerBindaddrs(t *testing.T) {
 		os.Setenv("TOR_PT_SERVER_BINDADDR", test.ptServerBindaddr)
 		os.Setenv("TOR_PT_SERVER_TRANSPORTS", test.ptServerTransports)
 		os.Setenv("TOR_PT_SERVER_TRANSPORT_OPTIONS", test.ptServerTransportOptions)
-		_, err := getServerBindaddrs(test.methodNames)
+		_, err := getServerBindaddrs(test.star)
 		if err == nil {
 			t.Errorf("TOR_PT_SERVER_BINDADDR=%q TOR_PT_SERVER_TRANSPORTS=%q TOR_PT_SERVER_TRANSPORT_OPTIONS=%q %q unexpectedly succeeded",
-				test.ptServerBindaddr, test.ptServerTransports, test.ptServerTransportOptions, test.methodNames)
+				test.ptServerBindaddr, test.ptServerTransports, test.ptServerTransportOptions, test.star)
 		}
 	}
 
@@ -362,14 +373,14 @@ func TestGetServerBindaddrs(t *testing.T) {
 		os.Setenv("TOR_PT_SERVER_BINDADDR", test.ptServerBindaddr)
 		os.Setenv("TOR_PT_SERVER_TRANSPORTS", test.ptServerTransports)
 		os.Setenv("TOR_PT_SERVER_TRANSPORT_OPTIONS", test.ptServerTransportOptions)
-		output, err := getServerBindaddrs(test.methodNames)
+		output, err := getServerBindaddrs(test.star)
 		if err != nil {
 			t.Errorf("TOR_PT_SERVER_BINDADDR=%q TOR_PT_SERVER_TRANSPORTS=%q TOR_PT_SERVER_TRANSPORT_OPTIONS=%q %q unexpectedly returned an error: %s",
-				test.ptServerBindaddr, test.ptServerTransports, test.ptServerTransportOptions, test.methodNames, err)
+				test.ptServerBindaddr, test.ptServerTransports, test.ptServerTransportOptions, test.star, err)
 		}
 		if !bindaddrSetsEqual(output, test.expected) {
 			t.Errorf("TOR_PT_SERVER_BINDADDR=%q TOR_PT_SERVER_TRANSPORTS=%q TOR_PT_SERVER_TRANSPORT_OPTIONS=%q %q → %q (expected %q)",
-				test.ptServerBindaddr, test.ptServerTransports, test.ptServerTransportOptions, test.methodNames, output, test.expected)
+				test.ptServerBindaddr, test.ptServerTransports, test.ptServerTransportOptions, test.star, output, test.expected)
 		}
 	}
 }

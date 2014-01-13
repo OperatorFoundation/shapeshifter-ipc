@@ -87,14 +87,19 @@ func main() {
 
 	listeners := make([]net.Listener, 0)
 	for _, bindaddr := range ptInfo.Bindaddrs {
-		ln, err := net.ListenTCP("tcp", bindaddr.Addr)
-		if err != nil {
-			pt.SmethodError(bindaddr.MethodName, err.Error())
-			continue
+		switch bindaddr.MethodName {
+		case "dummy":
+			ln, err := net.ListenTCP("tcp", bindaddr.Addr)
+			if err != nil {
+				pt.SmethodError(bindaddr.MethodName, err.Error())
+				break
+			}
+			go acceptLoop(ln)
+			pt.Smethod(bindaddr.MethodName, ln.Addr())
+			listeners = append(listeners, ln)
+		default:
+			pt.SmethodError(bindaddr.MethodName, "no such method")
 		}
-		go acceptLoop(ln)
-		pt.Smethod(bindaddr.MethodName, ln.Addr())
-		listeners = append(listeners, ln)
 	}
 	pt.SmethodsDone()
 
