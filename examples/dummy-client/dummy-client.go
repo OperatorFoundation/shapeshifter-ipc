@@ -78,7 +78,6 @@ func acceptLoop(ln *pt.SocksListener) error {
 		}
 		go handler(conn)
 	}
-	return nil
 }
 
 func main() {

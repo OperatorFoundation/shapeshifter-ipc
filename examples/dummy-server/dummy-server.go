@@ -75,7 +75,6 @@ func acceptLoop(ln net.Listener) error {
 		}
 		go handler(conn)
 	}
-	return nil
 }
 
 func main() {
