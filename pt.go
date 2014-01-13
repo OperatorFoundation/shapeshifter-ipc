@@ -40,13 +40,18 @@
 // 			os.Exit(1)
 // 		}
 // 		for _, methodName := range ptInfo.MethodNames {
-// 			ln, err := pt.ListenSocks("tcp", "127.0.0.1:0")
-// 			if err != nil {
-// 				pt.CmethodError(methodName, err.Error())
-// 				continue
+// 			switch methodName {
+// 			case "foo":
+// 				ln, err := pt.ListenSocks("tcp", "127.0.0.1:0")
+// 				if err != nil {
+// 					pt.CmethodError(methodName, err.Error())
+// 					break
+// 				}
+// 				go acceptLoop(ln)
+// 				pt.Cmethod(methodName, ln.Version(), ln.Addr())
+// 			default:
+// 				pt.CmethodError(methodName, "no such method")
 // 			}
-// 			go acceptLoop(ln)
-// 			pt.Cmethod(methodName, ln.Version(), ln.Addr())
 // 		}
 // 		pt.CmethodsDone()
 // 	}
@@ -86,13 +91,18 @@
 // 			os.Exit(1)
 // 		}
 // 		for _, bindaddr := range ptInfo.Bindaddrs {
-// 			ln, err := net.ListenTCP("tcp", bindaddr.Addr)
-// 			if err != nil {
-// 				pt.SmethodError(bindaddr.MethodName, err.Error())
-// 				continue
+// 			switch bindaddr.MethodName {
+// 			case "foo":
+// 				ln, err := net.ListenTCP("tcp", bindaddr.Addr)
+// 				if err != nil {
+// 					pt.SmethodError(bindaddr.MethodName, err.Error())
+// 					break
+// 				}
+// 				go acceptLoop(ln)
+// 				pt.Smethod(bindaddr.MethodName, ln.Addr())
+// 			default:
+// 				pt.SmethodError(bindaddr.MethodName, "no such method")
 // 			}
-// 			go acceptLoop(ln)
-// 			pt.Smethod(bindaddr.MethodName, ln.Addr())
 // 		}
 // 		pt.SmethodsDone()
 // 	}
