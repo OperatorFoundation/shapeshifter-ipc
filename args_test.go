@@ -67,20 +67,24 @@ func TestArgsGet(t *testing.T) {
 
 func TestArgsAdd(t *testing.T) {
 	args := make(Args)
-	if !argsEqual(args, Args{}) {
-		t.Error()
+	expected := Args{}
+	if !argsEqual(args, expected) {
+		t.Fatalf("%q != %q", args, expected)
 	}
 	args.Add("k1", "v1")
-	if !argsEqual(args, Args{"k1": []string{"v1"}}) {
-		t.Error()
+	expected = Args{"k1": []string{"v1"}}
+	if !argsEqual(args, expected) {
+		t.Fatalf("%q != %q", args, expected)
 	}
 	args.Add("k2", "v2")
-	if !argsEqual(args, Args{"k1": []string{"v1"}, "k2": []string{"v2"}}) {
-		t.Error()
+	expected = Args{"k1": []string{"v1"}, "k2": []string{"v2"}}
+	if !argsEqual(args, expected) {
+		t.Fatalf("%q != %q", args, expected)
 	}
 	args.Add("k1", "v3")
-	if !argsEqual(args, Args{"k1": []string{"v1", "v3"}, "k2": []string{"v2"}}) {
-		t.Error()
+	expected = Args{"k1": []string{"v1", "v3"}, "k2": []string{"v2"}}
+	if !argsEqual(args, expected) {
+		t.Fatalf("%q != %q", args, expected)
 	}
 }
 

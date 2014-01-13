@@ -85,7 +85,7 @@ func TestReadSocks4aConnect(t *testing.T) {
 		}
 		addr, err := net.ResolveTCPAddr("tcp", req.Target)
 		if err != nil {
-			t.Error("%q → target %q: cannot resolve: %s", test.input,
+			t.Errorf("%q → target %q: cannot resolve: %s", test.input,
 				req.Target, err)
 		}
 		if !tcpAddrsEqual(addr, &test.addr) {
@@ -144,7 +144,7 @@ func TestSendSocks4aResponse(t *testing.T) {
 		var buf bytes.Buffer
 		err := sendSocks4aResponse(&buf, test.code, &test.addr)
 		if err != nil {
-			t.Errorf("0x%02x %s unexpectedly returned an error: %s", test.code, test.addr, err)
+			t.Errorf("0x%02x %s unexpectedly returned an error: %s", test.code, &test.addr, err)
 		}
 		p := make([]byte, 1024)
 		n, err := buf.Read(p)
@@ -154,7 +154,7 @@ func TestSendSocks4aResponse(t *testing.T) {
 		output := p[:n]
 		if !bytes.Equal(output, test.expected) {
 			t.Errorf("0x%02x %s → %v (expected %v)",
-				test.code, test.addr, output, test.expected)
+				test.code, &test.addr, output, test.expected)
 		}
 	}
 }

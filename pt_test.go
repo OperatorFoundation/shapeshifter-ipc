@@ -643,7 +643,7 @@ func testExtOrPortSetupIndividual(t *testing.T, addr, methodName string) {
 	// fake an OKAY response.
 	err = extOrPortSendCommand(&buf.ReadBuf, extOrCmdOkay, []byte{})
 	if err != nil {
-		t.Fatal()
+		t.Fatal(err)
 	}
 	err = extOrPortSetup(&buf, addr, methodName)
 	if err != nil {
