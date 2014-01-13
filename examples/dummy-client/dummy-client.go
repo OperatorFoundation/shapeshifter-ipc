@@ -90,14 +90,19 @@ func main() {
 
 	listeners := make([]net.Listener, 0)
 	for _, methodName := range ptInfo.MethodNames {
-		ln, err := pt.ListenSocks("tcp", "127.0.0.1:0")
-		if err != nil {
-			pt.CmethodError(methodName, err.Error())
-			continue
+		switch methodName {
+		case "dummy":
+			ln, err := pt.ListenSocks("tcp", "127.0.0.1:0")
+			if err != nil {
+				pt.CmethodError(methodName, err.Error())
+				break
+			}
+			go acceptLoop(ln)
+			pt.Cmethod(methodName, ln.Version(), ln.Addr())
+			listeners = append(listeners, ln)
+		default:
+			pt.CmethodError(methodName, "no such method")
 		}
-		go acceptLoop(ln)
-		pt.Cmethod(methodName, ln.Version(), ln.Addr())
-		listeners = append(listeners, ln)
 	}
 	pt.CmethodsDone()
 

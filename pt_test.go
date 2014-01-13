@@ -118,7 +118,7 @@ func tcpAddrsEqual(a, b *net.TCPAddr) bool {
 func TestGetClientTransports(t *testing.T) {
 	tests := [...]struct {
 		ptServerClientTransports string
-		methodNames              []string
+		star                     []string
 		expected                 []string
 	}{
 		{
@@ -147,21 +147,31 @@ func TestGetClientTransports(t *testing.T) {
 			[]string{"alpha"},
 		},
 		{
+			"alpha,beta,gamma",
+			[]string{},
+			[]string{"alpha", "beta", "gamma"},
+		},
+		{
 			"alpha,beta",
-			[]string{"alpha", "beta", "alpha"},
+			[]string{},
 			[]string{"alpha", "beta"},
+		},
+		{
+			"alpha",
+			[]string{},
+			[]string{"alpha"},
 		},
 		// my reading of pt-spec.txt says that "*" has special meaning
 		// only when it is the entirety of the environment variable.
 		{
 			"alpha,*,gamma",
 			[]string{"alpha", "beta", "gamma"},
-			[]string{"alpha", "gamma"},
+			[]string{"alpha", "*", "gamma"},
 		},
 		{
 			"alpha",
 			[]string{"beta"},
-			[]string{},
+			[]string{"alpha"},
 		},
 	}
 
@@ -175,14 +185,14 @@ func TestGetClientTransports(t *testing.T) {
 
 	for _, test := range tests {
 		os.Setenv("TOR_PT_CLIENT_TRANSPORTS", test.ptServerClientTransports)
-		output, err := getClientTransports(test.methodNames)
+		output, err := getClientTransports(test.star)
 		if err != nil {
 			t.Errorf("TOR_PT_CLIENT_TRANSPORTS=%q unexpectedly returned an error: %s",
 				test.ptServerClientTransports, err)
 		}
 		if !stringSetsEqual(output, test.expected) {
 			t.Errorf("TOR_PT_CLIENT_TRANSPORTS=%q %q → %q (expected %q)",
-				test.ptServerClientTransports, test.methodNames, output, test.expected)
+				test.ptServerClientTransports, test.star, output, test.expected)
 		}
 	}
 }

@@ -315,24 +315,16 @@ func getManagedTransportVer() (string, error) {
 // Get the intersection of the method names offered by Tor and those in
 // methodNames. This function reads the environment variable
 // TOR_PT_CLIENT_TRANSPORTS.
-func getClientTransports(methodNames []string) ([]string, error) {
+func getClientTransports(star []string) ([]string, error) {
 	clientTransports, err := getenvRequired("TOR_PT_CLIENT_TRANSPORTS")
 	if err != nil {
 		return nil, err
 	}
 	if clientTransports == "*" {
-		return methodNames, nil
+		return star, nil
+	} else {
+		return strings.Split(clientTransports, ","), nil
 	}
-	result := make([]string, 0)
-	for _, requested := range strings.Split(clientTransports, ",") {
-		for _, methodName := range methodNames {
-			if requested == methodName {
-				result = append(result, methodName)
-				break
-			}
-		}
-	}
-	return result, nil
 }
 
 // This structure is returned by ClientSetup. It consists of a list of method
@@ -342,16 +334,17 @@ type ClientInfo struct {
 }
 
 // Check the client pluggable transports environment, emitting an error message
-// and returning a non-nil error if any error is encountered. Returns a
-// ClientInfo struct.
-func ClientSetup(methodNames []string) (info ClientInfo, err error) {
+// and returning a non-nil error if any error is encountered. star is the list
+// of method names to use in case "*" is requested by Tor. Resolves the various
+// Returns a ClientInfo struct.
+func ClientSetup(star []string) (info ClientInfo, err error) {
 	ver, err := getManagedTransportVer()
 	if err != nil {
 		return
 	}
 	line("VERSION", ver)
 
-	info.MethodNames, err = getClientTransports(methodNames)
+	info.MethodNames, err = getClientTransports(star)
 	if err != nil {
 		return
 	}
