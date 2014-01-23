@@ -13,7 +13,7 @@ import (
 // Args maps a string key to a list of values. It is similar to url.Values.
 type Args map[string][]string
 
-// Get the first value associated with the given key. If there are any value
+// Get the first value associated with the given key. If there are any values
 // associated with the key, the ok return value is true; otherwise it is false.
 // If you need access to multiple values, use the map directly.
 func (args Args) Get(key string) (value string, ok bool) {
