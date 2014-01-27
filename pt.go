@@ -332,9 +332,8 @@ func getClientTransports(star []string) ([]string, error) {
 	}
 	if clientTransports == "*" {
 		return star, nil
-	} else {
-		return strings.Split(clientTransports, ","), nil
 	}
+	return strings.Split(clientTransports, ","), nil
 }
 
 // This structure is returned by ClientSetup. It consists of a list of method
