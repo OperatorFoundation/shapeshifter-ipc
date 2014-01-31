@@ -344,8 +344,8 @@ type ClientInfo struct {
 
 // Check the client pluggable transports environment, emitting an error message
 // and returning a non-nil error if any error is encountered. star is the list
-// of method names to use in case "*" is requested by Tor. Resolves the various
-// Returns a ClientInfo struct.
+// of method names to use in case "*" is requested by Tor. Returns a ClientInfo
+// struct.
 func ClientSetup(star []string) (info ClientInfo, err error) {
 	ver, err := getManagedTransportVer()
 	if err != nil {
