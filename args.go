@@ -14,7 +14,8 @@ import (
 type Args map[string][]string
 
 // Get the first value associated with the given key. If there are any values
-// associated with the key, the ok return value is true; otherwise it is false.
+// associated with the key, the value return has the value and ok is set to
+// true. If there are no values for the given key, value is "" and ok is false.
 // If you need access to multiple values, use the map directly.
 func (args Args) Get(key string) (value string, ok bool) {
 	if args == nil {
