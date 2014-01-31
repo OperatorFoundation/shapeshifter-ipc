@@ -45,6 +45,9 @@ func TestArgsGet(t *testing.T) {
 	if ok {
 		t.Errorf("Unexpected Get success for %q", "a")
 	}
+	if v != "" {
+		t.Errorf("Get failure returned other than %q: %q", "", v)
+	}
 	v, ok = args.Get("b")
 	if !ok {
 		t.Errorf("Unexpected Get failure for %q", "b")
