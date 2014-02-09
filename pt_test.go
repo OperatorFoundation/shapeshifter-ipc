@@ -440,6 +440,32 @@ func TestReadAuthCookie(t *testing.T) {
 	}
 }
 
+func TestComputeServerHash(t *testing.T) {
+	authCookie := make([]byte, 32)
+	clientNonce := make([]byte, 32)
+	serverNonce := make([]byte, 32)
+	// hmac.new("\x00"*32, "ExtORPort authentication server-to-client hash" + "\x00"*64, hashlib.sha256).hexdigest()
+	expected := []byte("\x9e\x22\x19\x19\x98\x2a\x84\xf7\x5f\xaf\x60\xef\x92\x69\x49\x79\x62\x68\xc9\x78\x33\xe0\x69\x60\xff\x26\x53\x69\xa9\x0f\xd6\xd8")
+	hash := computeServerHash(authCookie, clientNonce, serverNonce)
+	if !bytes.Equal(hash, expected) {
+		t.Errorf("%x %x %x → %x (expected %x)", authCookie,
+			clientNonce, serverNonce, hash, expected)
+	}
+}
+
+func TestComputeClientHash(t *testing.T) {
+	authCookie := make([]byte, 32)
+	clientNonce := make([]byte, 32)
+	serverNonce := make([]byte, 32)
+	// hmac.new("\x00"*32, "ExtORPort authentication client-to-server hash" + "\x00"*64, hashlib.sha256).hexdigest()
+	expected := []byte("\x0f\x36\x8b\x1b\xee\x24\xaa\xbc\x54\xa9\x11\x4c\xe0\x6c\x07\x0f\x3e\xd9\x9d\x0d\x36\x8f\x59\x9c\xcc\x6d\xfd\xc8\xbf\x45\x7a\x62")
+	hash := computeClientHash(authCookie, clientNonce, serverNonce)
+	if !bytes.Equal(hash, expected) {
+		t.Errorf("%x %x %x → %x (expected %x)", authCookie,
+			clientNonce, serverNonce, hash, expected)
+	}
+}
+
 // Elide a byte slice in case it's really long.
 func fmtBytes(s []byte) string {
 	if len(s) > 100 {
