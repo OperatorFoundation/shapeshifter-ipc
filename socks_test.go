@@ -19,6 +19,8 @@ func TestReadSocks4aConnect(t *testing.T) {
 		[]byte("\x04\x01\x12\x34\x00\x00\x00\x01key=value\x00hostname"),
 		// bad name–value mapping
 		[]byte("\x04\x01\x12\x34\x00\x00\x00\x01userid\x00hostname\x00"),
+		// bad version number
+		[]byte("\x03\x01\x12\x34\x01\x02\x03\x04\x00"),
 		// BIND request
 		[]byte("\x04\x02\x12\x34\x01\x02\x03\x04\x00"),
 		// SOCKS5

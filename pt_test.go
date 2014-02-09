@@ -277,11 +277,12 @@ func TestGetServerBindaddrs(t *testing.T) {
 		ptServerTransportOptions string
 		star                     []string
 	}{
+		// bad TOR_PT_SERVER_BINDADDR
 		{
-			"xxx",
-			"xxx",
+			"alpha",
+			"alpha",
 			"",
-			[]string{},
+			[]string{"alpha", "beta", "gamma"},
 		},
 		{
 			"alpha-1.2.3.4",
@@ -289,6 +290,14 @@ func TestGetServerBindaddrs(t *testing.T) {
 			"",
 			[]string{"alpha", "beta", "gamma"},
 		},
+		// missing TOR_PT_SERVER_TRANSPORTS
+		{
+			"alpha-1.2.3.4:1111",
+			"",
+			"alpha:key=value",
+			[]string{"alpha"},
+		},
+		// bad TOR_PT_SERVER_TRANSPORT_OPTIONS
 		{
 			"alpha-1.2.3.4:1111",
 			"alpha",

@@ -38,9 +38,17 @@ func TestArgsGet(t *testing.T) {
 		"b": []string{"value"},
 		"c": []string{"v1", "v2", "v3"},
 	}
+	var uninit Args
 
 	var v string
 	var ok bool
+
+	// Get on nil map should be the same as Get on empty map.
+	v, ok = uninit.Get("a")
+	if !(v == "" && !ok) {
+		t.Errorf("unexpected result from Get on nil Args: %q %v", v, ok)
+	}
+
 	v, ok = args.Get("a")
 	if ok {
 		t.Errorf("Unexpected Get success for %q", "a")
@@ -94,6 +102,7 @@ func TestArgsAdd(t *testing.T) {
 func TestParseClientParameters(t *testing.T) {
 	badTests := [...]string{
 		"key",
+		"key\\",
 		"=value",
 		"==value",
 		"==key=value",
@@ -215,12 +224,14 @@ func optsEqual(a, b map[string]Args) bool {
 
 func TestParseServerTransportOptions(t *testing.T) {
 	badTests := [...]string{
+		"t\\",
 		":=",
 		"t:=",
 		":k=",
 		":=v",
 		"t:=v",
 		"t:=v",
+		"t:k\\",
 		"t:k=v;",
 		"abc",
 		"t:",
@@ -312,6 +323,10 @@ func TestEncodeSmethodArgs(t *testing.T) {
 		args     Args
 		expected string
 	}{
+		{
+			nil,
+			"",
+		},
 		{
 			Args{},
 			"",
