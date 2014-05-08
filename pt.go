@@ -15,7 +15,7 @@
 // 		if err != nil {
 // 			return err
 // 		}
-// 		// do something with conn and or.
+// 		// do something with conn and remote.
 // 		return nil
 // 	}
 // 	func acceptLoop(ln *pt.SocksListener) error {
