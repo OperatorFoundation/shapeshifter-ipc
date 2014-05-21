@@ -737,3 +737,27 @@ func TestExtOrPortSetup(t *testing.T) {
 	testExtOrPortSetupIndividual(t, "", methodName)
 	testExtOrPortSetupIndividual(t, addr, methodName)
 }
+
+func TestIsClient(t *testing.T) {
+	os.Clearenv()
+	if IsClient() {
+		t.Errorf("empty enviornment unexpectedly appears as a client")
+	}
+
+	os.Setenv("TOR_PT_CLIENT_TRANSPORTS", "dummy")
+	if !IsClient() {
+		t.Errorf("IsClient returned false with TOR_PT_CLIENT_TRANSPORTS set")
+	}
+}
+
+func TestIsServer(t *testing.T) {
+	os.Clearenv()
+	if IsServer() {
+		t.Errorf("empty enviornment unexpectedly appears as a server")
+	}
+
+	os.Setenv("TOR_PT_SERVER_TRANSPORTS", "dummy")
+	if !IsServer() {
+		t.Errorf("IsServer returned false with TOR_PT_SERVER_TRANSPORTS set")
+	}
+}

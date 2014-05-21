@@ -816,3 +816,15 @@ func DialOr(info *ServerInfo, addr, methodName string) (*net.TCPConn, error) {
 
 	return s, nil
 }
+
+// IsClient returns true if the enviornment reflects a managed client.
+func IsClient() bool {
+	env := getenv("TOR_PT_CLIENT_TRANSPORTS")
+	return env != ""
+}
+
+// IsServer returns true if the enviornment reflects a managed server.
+func IsServer() bool {
+	env := getenv("TOR_PT_SERVER_TRANSPORTS")
+	return env != ""
+}
