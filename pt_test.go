@@ -8,6 +8,7 @@ import (
 	"io/ioutil"
 	"net"
 	"os"
+	"path"
 	"sort"
 	"testing"
 )
@@ -736,6 +737,64 @@ func TestExtOrPortSetup(t *testing.T) {
 	testExtOrPortSetupIndividual(t, addr, "")
 	testExtOrPortSetupIndividual(t, "", methodName)
 	testExtOrPortSetupIndividual(t, addr, methodName)
+}
+
+func TestMakeStateDir(t *testing.T) {
+	os.Clearenv()
+
+	// TOR_PT_STATE_LOCATION not set.
+	_, err := MakeStateDir()
+	if err == nil {
+		t.Errorf("empty environment unexpectedly succeeded")
+	}
+
+	// Setup the scratch directory.
+	tempDir, err := ioutil.TempDir("", "testMakeStateDir")
+	if err != nil {
+		t.Fatalf("ioutil.TempDir failed: %s", err)
+	}
+	defer os.RemoveAll(tempDir)
+
+	goodTests := [...]string {
+		// Already existing directory.
+		tempDir,
+
+		// Nonexistent directory, parent exists.
+		path.Join(tempDir, "parentExists"),
+
+		// Nonexistent directory, parent doesn't exist.
+		path.Join(tempDir, "missingParent", "parentMissing"),
+	}
+	for _, test := range goodTests {
+		os.Setenv("TOR_PT_STATE_LOCATION", test)
+		dir, err := MakeStateDir()
+		if err != nil {
+			t.Errorf("MakeStateDir unexpectedly failed: %s", err)
+		}
+		if dir != test {
+			t.Errorf("MakeStateDir returned an unexpected path %s (expecting %s)", dir, test)
+		}
+	}
+
+	// Name already exists, but is an ordinary file.
+	tempFile := path.Join(tempDir, "file")
+	f, err := os.Create(tempFile)
+	if err != nil {
+		t.Fatalf("os.Create failed: %s", err)
+	}
+	defer f.Close()
+	os.Setenv("TOR_PT_STATE_LOCATION", tempFile)
+	_, err = MakeStateDir()
+	if err == nil {
+		t.Errorf("MakeStateDir with a file unexpectedly succeded")
+	}
+
+	// Directory name that cannot be created. (Subdir of a file)
+	os.Setenv("TOR_PT_STATE_LOCATION", path.Join(tempFile, "subDir"))
+	_, err = MakeStateDir()
+	if err == nil {
+		t.Errorf("MakeStateDir with a subdirectory of a file unexpectedly succeded")
+	}
 }
 
 func TestIsClient(t *testing.T) {

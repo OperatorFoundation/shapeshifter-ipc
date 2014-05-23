@@ -322,20 +322,17 @@ func getManagedTransportVer() (string, error) {
 	return "", versionError("no-version")
 }
 
-// Get the pluggable transport state location offered by Tor, and create it if
-// missing.  This function reads the enviornment variable
-// TOR_PT_STATE_LOCATION.
-func getStateLocation() (string, error) {
-	stateLocation, err := getenvRequired("TOR_PT_STATE_LOCATION")
+// Return the directory name in the TOR_PT_STATE_LOCATION environment variable,
+// creating it if it doesn't exist. Returns non-nil error if
+// TOR_PT_STATE_LOCATION is not set or if there is an error creating the
+// directory.
+func MakeStateDir() (string, error) {
+	dir, err := getenvRequired("TOR_PT_STATE_LOCATION")
 	if err != nil {
 		return "", err
 	}
-	err = os.MkdirAll(stateLocation, 0700)
-	if err != nil {
-		return "", envError(fmt.Sprintf("error creating TOR_PT_STATE_LOCATION: %s", err))
-	}
-
-	return stateLocation, nil
+	err = os.MkdirAll(dir, 0700)
+	return dir, err
 }
 
 // Get the intersection of the method names offered by Tor and those in
@@ -353,10 +350,9 @@ func getClientTransports(star []string) ([]string, error) {
 }
 
 // This structure is returned by ClientSetup. It consists of a list of method
-// names and the state location.
+// names.
 type ClientInfo struct {
 	MethodNames   []string
-	StateLocation string
 }
 
 // Check the client pluggable transports environment, emitting an error message
@@ -369,11 +365,6 @@ func ClientSetup(star []string) (info ClientInfo, err error) {
 		return
 	}
 	line("VERSION", ver)
-
-	info.StateLocation, err = getStateLocation()
-	if err != nil {
-		return
-	}
 
 	info.MethodNames, err = getClientTransports(star)
 	if err != nil {
@@ -540,13 +531,12 @@ func readAuthCookieFile(filename string) ([]byte, error) {
 
 // This structure is returned by ServerSetup. It consists of a list of
 // Bindaddrs, an address for the ORPort, an address for the extended ORPort (if
-// any), an authentication cookie (if any), and the state location.
+// any), and an authentication cookie (if any).
 type ServerInfo struct {
 	Bindaddrs      []Bindaddr
 	OrAddr         *net.TCPAddr
 	ExtendedOrAddr *net.TCPAddr
 	AuthCookie     []byte
-	StateLocation  string
 }
 
 // Check the server pluggable transports environment, emitting an error message
@@ -560,11 +550,6 @@ func ServerSetup(star []string) (info ServerInfo, err error) {
 		return
 	}
 	line("VERSION", ver)
-
-	info.StateLocation, err = getStateLocation()
-	if err != nil {
-		return
-	}
 
 	info.Bindaddrs, err = getServerBindaddrs(star)
 	if err != nil {
