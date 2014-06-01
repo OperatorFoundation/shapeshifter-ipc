@@ -359,6 +359,15 @@ type ClientInfo struct {
 // and returning a non-nil error if any error is encountered. star is the list
 // of method names to use in case "*" is requested by Tor. Returns a ClientInfo
 // struct.
+//
+// If your program needs to know whether to call ClientSetup or ServerSetup
+// (i.e., if the same program can be run as either a client or a server), check
+// whether the TOR_PT_CLIENT_TRANSPORTS environment variable is set:
+// 	if os.Getenv("TOR_PT_CLIENT_TRANSPORTS") != "" {
+// 		// Client mode; call pt.ClientSetup.
+// 	} else {
+// 		// Server mode; call pt.ServerSetup.
+// 	}
 func ClientSetup(star []string) (info ClientInfo, err error) {
 	ver, err := getManagedTransportVer()
 	if err != nil {
@@ -544,6 +553,15 @@ type ServerInfo struct {
 // of method names to use in case "*" is requested by Tor. Resolves the various
 // requested bind addresses, the server ORPort and extended ORPort, and reads
 // the auth cookie file. Returns a ServerInfo struct.
+//
+// If your program needs to know whether to call ClientSetup or ServerSetup
+// (i.e., if the same program can be run as either a client or a server), check
+// whether the TOR_PT_CLIENT_TRANSPORTS environment variable is set:
+// 	if os.Getenv("TOR_PT_CLIENT_TRANSPORTS") != "" {
+// 		// Client mode; call pt.ClientSetup.
+// 	} else {
+// 		// Server mode; call pt.ServerSetup.
+// 	}
 func ServerSetup(star []string) (info ServerInfo, err error) {
 	ver, err := getManagedTransportVer()
 	if err != nil {
@@ -828,16 +846,4 @@ func DialOr(info *ServerInfo, addr, methodName string) (*net.TCPConn, error) {
 	s.SetDeadline(time.Time{})
 
 	return s, nil
-}
-
-// IsClient returns true if the enviornment reflects a managed client.
-func IsClient() bool {
-	env := getenv("TOR_PT_CLIENT_TRANSPORTS")
-	return env != ""
-}
-
-// IsServer returns true if the enviornment reflects a managed server.
-func IsServer() bool {
-	env := getenv("TOR_PT_SERVER_TRANSPORTS")
-	return env != ""
 }
