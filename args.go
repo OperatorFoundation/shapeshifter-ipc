@@ -34,7 +34,7 @@ func (args Args) Add(key, value string) {
 }
 
 // Return the index of the next unescaped byte in s that is in the term set, or
-// else the length of the string if not terminators appear. Additionally return
+// else the length of the string if no terminators appear. Additionally return
 // the unescaped string up to the returned index.
 func indexUnescaped(s string, term []byte) (int, string, error) {
 	var i int
