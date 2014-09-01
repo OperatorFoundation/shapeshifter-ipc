@@ -352,7 +352,7 @@ func getClientTransports(star []string) ([]string, error) {
 // This structure is returned by ClientSetup. It consists of a list of method
 // names.
 type ClientInfo struct {
-	MethodNames   []string
+	MethodNames []string
 }
 
 // Check the client pluggable transports environment, emitting an error message

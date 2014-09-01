@@ -755,7 +755,7 @@ func TestMakeStateDir(t *testing.T) {
 	}
 	defer os.RemoveAll(tempDir)
 
-	goodTests := [...]string {
+	goodTests := [...]string{
 		// Already existing directory.
 		tempDir,
 
