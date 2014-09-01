@@ -2,7 +2,6 @@ package pt
 
 import (
 	"bytes"
-	"errors"
 	"fmt"
 	"sort"
 	"strings"
@@ -48,7 +47,7 @@ func indexUnescaped(s string, term []byte) (int, string, error) {
 		if b == '\\' {
 			i++
 			if i >= len(s) {
-				return 0, "", errors.New(fmt.Sprintf("nothing following final escape in %q", s))
+				return 0, "", fmt.Errorf("nothing following final escape in %q", s)
 			}
 			b = s[i]
 		}
@@ -82,7 +81,7 @@ func parseClientParameters(s string) (args Args, err error) {
 		i += offset
 		// End of string or no equals sign?
 		if i >= len(s) || s[i] != '=' {
-			err = errors.New(fmt.Sprintf("no equals sign in %q", s[begin:i]))
+			err = fmt.Errorf("no equals sign in %q", s[begin:i])
 			return
 		}
 		// Skip the equals sign.
@@ -94,7 +93,7 @@ func parseClientParameters(s string) (args Args, err error) {
 		}
 		i += offset
 		if len(key) == 0 {
-			err = errors.New(fmt.Sprintf("empty key in %q", s[begin:i]))
+			err = fmt.Errorf("empty key in %q", s[begin:i])
 			return
 		}
 		args.Add(key, value)
@@ -132,7 +131,7 @@ func parseServerTransportOptions(s string) (opts map[string]Args, err error) {
 		i += offset
 		// End of string or no colon?
 		if i >= len(s) || s[i] != ':' {
-			err = errors.New(fmt.Sprintf("no colon in %q", s[begin:i]))
+			err = fmt.Errorf("no colon in %q", s[begin:i])
 			return
 		}
 		// Skip the colon.
@@ -145,7 +144,7 @@ func parseServerTransportOptions(s string) (opts map[string]Args, err error) {
 		i += offset
 		// End of string or no equals sign?
 		if i >= len(s) || s[i] != '=' {
-			err = errors.New(fmt.Sprintf("no equals sign in %q", s[begin:i]))
+			err = fmt.Errorf("no equals sign in %q", s[begin:i])
 			return
 		}
 		// Skip the equals sign.
@@ -157,11 +156,11 @@ func parseServerTransportOptions(s string) (opts map[string]Args, err error) {
 		}
 		i += offset
 		if len(methodName) == 0 {
-			err = errors.New(fmt.Sprintf("empty method name in %q", s[begin:i]))
+			err = fmt.Errorf("empty method name in %q", s[begin:i])
 			return
 		}
 		if len(key) == 0 {
-			err = errors.New(fmt.Sprintf("empty key in %q", s[begin:i]))
+			err = fmt.Errorf("empty key in %q", s[begin:i])
 			return
 		}
 		if opts[methodName] == nil {

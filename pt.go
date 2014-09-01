@@ -132,7 +132,6 @@ import (
 	"crypto/sha256"
 	"crypto/subtle"
 	"encoding/binary"
-	"errors"
 	"fmt"
 	"io"
 	"net"
@@ -513,14 +512,14 @@ func readAuthCookie(f io.Reader) ([]byte, error) {
 	// Check that the file ends here.
 	n, err = f.Read(make([]byte, 1))
 	if n != 0 {
-		return nil, errors.New(fmt.Sprintf("file is longer than 64 bytes"))
+		return nil, fmt.Errorf("file is longer than 64 bytes")
 	} else if err != io.EOF {
-		return nil, errors.New(fmt.Sprintf("did not find EOF at end of file"))
+		return nil, fmt.Errorf("did not find EOF at end of file")
 	}
 	header := buf[0:32]
 	cookie := buf[32:64]
 	if subtle.ConstantTimeCompare(header, authCookieHeader) != 1 {
-		return nil, errors.New(fmt.Sprintf("missing auth cookie header"))
+		return nil, fmt.Errorf("missing auth cookie header")
 	}
 
 	return cookie, nil
@@ -644,12 +643,12 @@ func extOrPortAuthenticate(s io.ReadWriter, info *ServerInfo) error {
 		authTypes[b] = true
 	}
 	if count >= 256 {
-		return errors.New(fmt.Sprintf("read 256 auth types without seeing \\x00"))
+		return fmt.Errorf("read 256 auth types without seeing \\x00")
 	}
 
 	// We support only type 1, SAFE_COOKIE.
 	if !authTypes[1] {
-		return errors.New(fmt.Sprintf("server didn't offer auth type 1"))
+		return fmt.Errorf("server didn't offer auth type 1")
 	}
 	_, err := s.Write([]byte{1})
 	if err != nil {
@@ -681,7 +680,7 @@ func extOrPortAuthenticate(s io.ReadWriter, info *ServerInfo) error {
 
 	expectedServerHash := computeServerHash(info.AuthCookie, clientNonce, serverNonce)
 	if subtle.ConstantTimeCompare(serverHash, expectedServerHash) != 1 {
-		return errors.New(fmt.Sprintf("mismatch in server hash"))
+		return fmt.Errorf("mismatch in server hash")
 	}
 
 	clientHash = computeClientHash(info.AuthCookie, clientNonce, serverNonce)
@@ -696,7 +695,7 @@ func extOrPortAuthenticate(s io.ReadWriter, info *ServerInfo) error {
 		return err
 	}
 	if status[0] != 1 {
-		return errors.New(fmt.Sprintf("server rejected authentication"))
+		return fmt.Errorf("server rejected authentication")
 	}
 
 	return nil
@@ -714,7 +713,7 @@ const (
 func extOrPortSendCommand(s io.Writer, cmd uint16, body []byte) error {
 	var buf bytes.Buffer
 	if len(body) > 65535 {
-		return errors.New(fmt.Sprintf("body length %d exceeds maximum of 65535", len(body)))
+		return fmt.Errorf("body length %d exceeds maximum of 65535", len(body))
 	}
 	err := binary.Write(&buf, binary.BigEndian, cmd)
 	if err != nil {
@@ -807,9 +806,9 @@ func extOrPortSetup(s io.ReadWriter, addr, methodName string) error {
 		return err
 	}
 	if cmd == extOrCmdDeny {
-		return errors.New("server returned DENY after our USERADDR and DONE")
+		return fmt.Errorf("server returned DENY after our USERADDR and DONE")
 	} else if cmd != extOrCmdOkay {
-		return errors.New(fmt.Sprintf("server returned unknown command 0x%04x after our USERADDR and DONE", cmd))
+		return fmt.Errorf("server returned unknown command 0x%04x after our USERADDR and DONE", cmd)
 	}
 
 	return nil

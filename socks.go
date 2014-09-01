@@ -2,7 +2,6 @@ package pt
 
 import (
 	"bufio"
-	"errors"
 	"fmt"
 	"io"
 	"net"
@@ -166,11 +165,11 @@ func readSocks4aConnect(s io.Reader) (req SocksRequest, err error) {
 		return
 	}
 	if h[0] != socksVersion {
-		err = errors.New(fmt.Sprintf("SOCKS header had version 0x%02x, not 0x%02x", h[0], socksVersion))
+		err = fmt.Errorf("SOCKS header had version 0x%02x, not 0x%02x", h[0], socksVersion)
 		return
 	}
 	if h[1] != socksCmdConnect {
-		err = errors.New(fmt.Sprintf("SOCKS header had command 0x%02x, not 0x%02x", h[1], socksCmdConnect))
+		err = fmt.Errorf("SOCKS header had command 0x%02x, not 0x%02x", h[1], socksCmdConnect)
 		return
 	}
 
@@ -202,7 +201,7 @@ func readSocks4aConnect(s io.Reader) (req SocksRequest, err error) {
 	}
 
 	if r.Buffered() != 0 {
-		err = errors.New(fmt.Sprintf("%d bytes left after SOCKS header", r.Buffered()))
+		err = fmt.Errorf("%d bytes left after SOCKS header", r.Buffered())
 		return
 	}
 
