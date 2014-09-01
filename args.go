@@ -200,7 +200,7 @@ func encodeSmethodArgs(args Args) string {
 	}
 
 	keys := make([]string, 0, len(args))
-	for key, _ := range args {
+	for key := range args {
 		keys = append(keys, key)
 	}
 	sort.Strings(keys)

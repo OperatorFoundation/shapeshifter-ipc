@@ -255,29 +255,29 @@ func TestParseServerTransportOptions(t *testing.T) {
 		{
 			"t:k=v",
 			map[string]Args{
-				"t": Args{"k": []string{"v"}},
+				"t": {"k": []string{"v"}},
 			},
 		},
 		{
 			"t1:k=v1;t2:k=v2;t1:k=v3",
 			map[string]Args{
-				"t1": Args{"k": []string{"v1", "v3"}},
-				"t2": Args{"k": []string{"v2"}},
+				"t1": {"k": []string{"v1", "v3"}},
+				"t2": {"k": []string{"v2"}},
 			},
 		},
 		{
 			"t\\:1:k=v;t\\=2:k=v;t\\;3:k=v;t\\\\4:k=v",
 			map[string]Args{
-				"t:1":  Args{"k": []string{"v"}},
-				"t=2":  Args{"k": []string{"v"}},
-				"t;3":  Args{"k": []string{"v"}},
-				"t\\4": Args{"k": []string{"v"}},
+				"t:1":  {"k": []string{"v"}},
+				"t=2":  {"k": []string{"v"}},
+				"t;3":  {"k": []string{"v"}},
+				"t\\4": {"k": []string{"v"}},
 			},
 		},
 		{
 			"t:k\\:1=v;t:k\\=2=v;t:k\\;3=v;t:k\\\\4=v",
 			map[string]Args{
-				"t": Args{
+				"t": {
 					"k:1":  []string{"v"},
 					"k=2":  []string{"v"},
 					"k;3":  []string{"v"},
@@ -288,14 +288,14 @@ func TestParseServerTransportOptions(t *testing.T) {
 		{
 			"t:k=v\\:1;t:k=v\\=2;t:k=v\\;3;t:k=v\\\\4",
 			map[string]Args{
-				"t": Args{"k": []string{"v:1", "v=2", "v;3", "v\\4"}},
+				"t": {"k": []string{"v:1", "v=2", "v;3", "v\\4"}},
 			},
 		},
 		{
 			"trebuchet:secret=nou;trebuchet:cache=/tmp/cache;ballista:secret=yes",
 			map[string]Args{
-				"trebuchet": Args{"secret": []string{"nou"}, "cache": []string{"/tmp/cache"}},
-				"ballista":  Args{"secret": []string{"yes"}},
+				"trebuchet": {"secret": []string{"nou"}, "cache": []string{"/tmp/cache"}},
+				"ballista":  {"secret": []string{"yes"}},
 			},
 		},
 	}
