@@ -201,35 +201,57 @@ func getenvRequired(key string) (string, error) {
 	return value, nil
 }
 
-// Escape a string so it contains no byte values over 127 and doesn't contain
-// any of the characters '\x00' or '\n'.
-func escape(s string) string {
-	var buf bytes.Buffer
-	for _, b := range []byte(s) {
-		if b == '\n' {
-			buf.WriteString("\\n")
-		} else if b == '\\' {
-			buf.WriteString("\\\\")
-		} else if 0 < b && b < 128 {
-			buf.WriteByte(b)
-		} else {
-			fmt.Fprintf(&buf, "\\x%02x", b)
+// Returns true iff keyword contains only bytes allowed in a PT→Tor output line
+// keyword.
+// <KeywordChar> ::= <any US-ASCII alphanumeric, dash, and underscore>
+func keywordIsSafe(keyword string) bool {
+	for _, b := range []byte(keyword) {
+		if b >= '0' && b <= '9' {
+			continue
+		}
+		if b >= 'A' && b <= 'Z' {
+			continue
+		}
+		if b >= 'a' && b <= 'z' {
+			continue
+		}
+		if b == '-' || b == '_' {
+			continue
+		}
+		return false
+	}
+	return true
+}
+
+// Returns true iff arg contains only bytes allowed in a PT→Tor output line arg.
+// <ArgChar> ::= <any US-ASCII character but NUL or NL>
+func argIsSafe(arg string) bool {
+	for _, b := range []byte(arg) {
+		if b >= '\x80' || b == '\x00' || b == '\n' {
+			return false
 		}
 	}
-	return buf.String()
+	return true
 }
 
 func formatline(keyword string, v ...string) string {
 	var buf bytes.Buffer
+	if !keywordIsSafe(keyword) {
+		panic(fmt.Sprintf("keyword %q contains forbidden bytes", keyword))
+	}
 	buf.WriteString(keyword)
 	for _, x := range v {
-		buf.WriteString(" " + escape(x))
+		if !argIsSafe(x) {
+			panic(fmt.Sprintf("arg %q contains forbidden bytes", x))
+		}
+		buf.WriteString(" " + x)
 	}
 	return buf.String()
 }
 
-// Print a pluggable transports protocol line to Stdout. The line consists of an
-// unescaped keyword, followed by any number of escaped strings.
+// Print a pluggable transports protocol line to Stdout. The line consists of a
+// keyword followed by any number of space-separated arg strings. Panics if
+// there are forbidden bytes in the keyword or the args (pt-spec.txt 2.2.1).
 func line(keyword string, v ...string) {
 	fmt.Fprintln(Stdout, formatline(keyword, v...))
 }

@@ -13,43 +13,60 @@ import (
 	"testing"
 )
 
-func stringIsSafe(s string) bool {
-	for _, c := range []byte(s) {
-		if c == '\x00' || c == '\n' || c > 127 {
-			return false
+func TestKeywordIsSafe(t *testing.T) {
+	tests := [...]struct {
+		keyword  string
+		expected bool
+	}{
+		{"", true},
+		{"0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ-_", true},
+		{"CMETHOD", true},
+		{"CMETHOD:", false},
+		{"a b c", false},
+		{"CMETHOD\x7f", false},
+		{"CMETHOD\x80", false},
+		{"CMETHOD\x81", false},
+		{"CMETHOD\xff", false},
+		{"CMÉTHOD", false},
+	}
+
+	for _, input := range tests {
+		isSafe := keywordIsSafe(input.keyword)
+		if isSafe != input.expected {
+			t.Errorf("keywordIsSafe(%q) → %v (expected %v)",
+				input.keyword, isSafe, input.expected)
 		}
 	}
-	return true
 }
 
-func TestEscape(t *testing.T) {
-	tests := [...]string{
-		"",
-		"abc",
-		"a\nb",
-		"a\\b",
-		"ab\\",
-		"ab\\\n",
-		"ab\n\\",
+func TestArgIsSafe(t *testing.T) {
+	tests := [...]struct {
+		arg      string
+		expected bool
+	}{
+		{"", true},
+		{"abc", true},
+		{"127.0.0.1:8000", true},
+		{"étude", false},
+		{"a\nb", false},
+		{"a\\b", true},
+		{"ab\\", true},
+		{"ab\\\n", false},
+		{"ab\n\\", false},
+		{"abc\x7f", true},
+		{"abc\x80", false},
+		{"abc\x81", false},
+		{"abc\xff", false},
+		{"abc\xff", false},
+		{"var=GVsbG8\\=", true},
 	}
 
-	check := func(input string) {
-		output := escape(input)
-		if stringIsSafe(input) && input != output {
-			t.Errorf("escape(%q) → %q despite being safe", input, output)
-		}
-		if !stringIsSafe(output) {
-			t.Errorf("escape(%q) → %q is not safe", input, output)
-		}
-	}
 	for _, input := range tests {
-		check(input)
-	}
-	for b := 0; b < 256; b++ {
-		// check one-byte string with each byte value 0–255
-		check(string([]byte{byte(b)}))
-		// check UTF-8 encoding of each character 0–255
-		check(string(b))
+		isSafe := argIsSafe(input.arg)
+		if isSafe != input.expected {
+			t.Errorf("argIsSafe(%q) → %v (expected %v)",
+				input.arg, isSafe, input.expected)
+		}
 	}
 }
 
