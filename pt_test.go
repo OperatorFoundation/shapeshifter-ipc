@@ -806,13 +806,13 @@ func TestMakeStateDir(t *testing.T) {
 	os.Setenv("TOR_PT_STATE_LOCATION", tempFile)
 	_, err = MakeStateDir()
 	if err == nil {
-		t.Errorf("MakeStateDir with a file unexpectedly succeded")
+		t.Errorf("MakeStateDir with a file unexpectedly succeeded")
 	}
 
 	// Directory name that cannot be created. (Subdir of a file)
 	os.Setenv("TOR_PT_STATE_LOCATION", path.Join(tempFile, "subDir"))
 	_, err = MakeStateDir()
 	if err == nil {
-		t.Errorf("MakeStateDir with a subdirectory of a file unexpectedly succeded")
+		t.Errorf("MakeStateDir with a subdirectory of a file unexpectedly succeeded")
 	}
 }
