@@ -35,8 +35,11 @@ func TestEscape(t *testing.T) {
 
 	check := func(input string) {
 		output := escape(input)
+		if stringIsSafe(input) && input != output {
+			t.Errorf("escape(%q) → %q despite being safe", input, output)
+		}
 		if !stringIsSafe(output) {
-			t.Errorf("escape(%q) → %q", input, output)
+			t.Errorf("escape(%q) → %q is not safe", input, output)
 		}
 	}
 	for _, input := range tests {
