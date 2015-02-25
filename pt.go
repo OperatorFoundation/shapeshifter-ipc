@@ -111,13 +111,13 @@
 // the example programs dummy-client and dummy-server.
 //
 // Tor pluggable transports specification:
-// https://gitweb.torproject.org/torspec.git/blob/HEAD:/pt-spec.txt.
+// https://gitweb.torproject.org/torspec.git/tree/pt-spec.txt.
 //
 // Extended ORPort:
-// https://gitweb.torproject.org/torspec.git/blob/HEAD:/proposals/196-transport-control-ports.txt.
+// https://gitweb.torproject.org/torspec.git/tree/proposals/196-transport-control-ports.txt.
 //
 // Extended ORPort Authentication:
-// https://gitweb.torproject.org/torspec.git/blob/HEAD:/proposals/217-ext-orport-auth.txt.
+// https://gitweb.torproject.org/torspec.git/tree/proposals/217-ext-orport-auth.txt.
 //
 // The package implements a SOCKS4a server sufficient for a Tor client transport
 // plugin.
