@@ -15,7 +15,7 @@ The recommended way to start writing a new transport plugin is to copy
 dummy-client or dummy-server and make changes to it.
 
 There is browseable documentation here:
-http://godoc.org/git.torproject.org/pluggable-transports/goptlib.git
+https://godoc.org/git.torproject.org/pluggable-transports/goptlib.git
 
 Report bugs to the tor-dev@lists.torproject.org mailing list or to the
 bug tracker at https://trac.torproject.org/projects/tor.
