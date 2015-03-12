@@ -566,7 +566,7 @@ type ServerInfo struct {
 	Bindaddrs      []Bindaddr
 	OrAddr         *net.TCPAddr
 	ExtendedOrAddr *net.TCPAddr
-	AuthCookie     []byte
+	AuthCookiePath string
 }
 
 // Check the server pluggable transports environment, emitting an error message
@@ -612,17 +612,10 @@ func ServerSetup(star []string) (info ServerInfo, err error) {
 			return
 		}
 	}
-	authCookieFilename := getenv("TOR_PT_AUTH_COOKIE_FILE")
-	if authCookieFilename != "" {
-		info.AuthCookie, err = readAuthCookieFile(authCookieFilename)
-		if err != nil {
-			err = envError(fmt.Sprintf("error reading TOR_PT_AUTH_COOKIE_FILE %q: %s", authCookieFilename, err.Error()))
-			return
-		}
-	}
+	info.AuthCookiePath = getenv("TOR_PT_AUTH_COOKIE_FILE")
 
 	// Need either OrAddr or ExtendedOrAddr.
-	if info.OrAddr == nil && (info.ExtendedOrAddr == nil || info.AuthCookie == nil) {
+	if info.OrAddr == nil && (info.ExtendedOrAddr == nil || info.AuthCookiePath == "") {
 		err = envError("need TOR_PT_ORPORT or TOR_PT_EXTENDED_SERVER_PORT environment variable")
 		return
 	}
@@ -700,12 +693,20 @@ func extOrPortAuthenticate(s io.ReadWriter, info *ServerInfo) error {
 		return err
 	}
 
-	expectedServerHash := computeServerHash(info.AuthCookie, clientNonce, serverNonce)
+	// Work around tor bug #15240 where the auth cookie is generated after
+	// pluggable transports are launched, leading to a stale cookie getting
+	// cached forever if it is only read once as part of ServerSetup.
+	authCookie, err := readAuthCookieFile(info.AuthCookiePath)
+	if err != nil {
+		return fmt.Errorf("error reading TOR_PT_AUTH_COOKIE_FILE %q: %s", info.AuthCookiePath, err.Error())
+	}
+
+	expectedServerHash := computeServerHash(authCookie, clientNonce, serverNonce)
 	if subtle.ConstantTimeCompare(serverHash, expectedServerHash) != 1 {
 		return fmt.Errorf("mismatch in server hash")
 	}
 
-	clientHash = computeClientHash(info.AuthCookie, clientNonce, serverNonce)
+	clientHash = computeClientHash(authCookie, clientNonce, serverNonce)
 	_, err = s.Write(clientHash)
 	if err != nil {
 		return err
@@ -845,7 +846,7 @@ func extOrPortSetup(s io.ReadWriter, addr, methodName string) error {
 // commands, respectively. If either is "", the corresponding command is not
 // sent.
 func DialOr(info *ServerInfo, addr, methodName string) (*net.TCPConn, error) {
-	if info.ExtendedOrAddr == nil || info.AuthCookie == nil {
+	if info.ExtendedOrAddr == nil || info.AuthCookiePath == "" {
 		return net.DialTCP("tcp", nil, info.OrAddr)
 	}
 
