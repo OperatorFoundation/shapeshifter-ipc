@@ -5,9 +5,9 @@
 // 	Bridge dummy X.X.X.X:YYYY
 // 	ClientTransportPlugin dummy exec dummy-client
 //
-// Because this transport doesn't do anything to the traffic, you can use any
-// ordinary relay's ORPort in the Bridge line; it doesn't have to declare
-// support for the dummy transport.
+// Because this transport doesn't do anything to the traffic, you can use the
+// ORPort of any ordinary bridge (or relay that has DirPort set) in the bridge
+// line; it doesn't have to declare support for the dummy transport.
 package main
 
 import (
