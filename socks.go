@@ -73,10 +73,10 @@ func (conn *SocksConn) Reject() error {
 // 		conn, err := ln.AcceptSocks()
 // 		if err != nil {
 // 			log.Printf("accept error: %s", err)
-// 			if e, ok := err.(net.Error); ok && !e.Temporary() {
-// 				break
+// 			if e, ok := err.(net.Error); ok && e.Temporary() {
+// 				continue
 // 			}
-// 			continue
+// 			break
 // 		}
 // 		go handleConn(conn)
 // 	}
@@ -118,16 +118,17 @@ func (ln *SocksListener) Accept() (net.Conn, error) {
 // 	for {
 // 		conn, err := ln.AcceptSocks()
 // 		if err != nil {
-// 			if e, ok := err.(net.Error); ok && !e.Temporary() {
-// 				log.Printf("permanent accept error; giving up: %s", err)
-// 				break
+// 			if e, ok := err.(net.Error); ok && e.Temporary() {
+// 				log.Printf("temporary accept error; trying again: %s", err)
+// 				continue
 // 			}
-// 			log.Printf("temporary accept error; trying again: %s", err)
-// 			continue
+// 			log.Printf("permanent accept error; giving up: %s", err)
+// 			break
 // 		}
 // 		go handleConn(conn)
 // 	}
 func (ln *SocksListener) AcceptSocks() (*SocksConn, error) {
+retry:
 	c, err := ln.Listener.Accept()
 	if err != nil {
 		return nil, err
@@ -137,17 +138,17 @@ func (ln *SocksListener) AcceptSocks() (*SocksConn, error) {
 	err = conn.SetDeadline(time.Now().Add(socksRequestTimeout))
 	if err != nil {
 		conn.Close()
-		return nil, err
+		goto retry
 	}
 	conn.Req, err = readSocks4aConnect(conn)
 	if err != nil {
 		conn.Close()
-		return nil, err
+		goto retry
 	}
 	err = conn.SetDeadline(time.Time{})
 	if err != nil {
 		conn.Close()
-		return nil, err
+		goto retry
 	}
 	return conn, nil
 }

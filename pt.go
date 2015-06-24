@@ -23,10 +23,10 @@
 // 		for {
 // 			conn, err := ln.AcceptSocks()
 // 			if err != nil {
-// 				if e, ok := err.(net.Error); ok && !e.Temporary() {
-// 					return err
+// 				if e, ok := err.(net.Error); ok && e.Temporary() {
+// 					continue
 // 				}
-// 				continue
+// 				return err
 // 			}
 // 			go handler(conn)
 // 		}
@@ -80,10 +80,10 @@
 // 		for {
 // 			conn, err := ln.Accept()
 // 			if err != nil {
-// 				if e, ok := err.(net.Error); ok && !e.Temporary() {
-// 					return err
+// 				if e, ok := err.(net.Error); ok && e.Temporary() {
+// 					continue
 // 				}
-// 				continue
+// 				return err
 // 			}
 // 			go handler(conn)
 // 		}

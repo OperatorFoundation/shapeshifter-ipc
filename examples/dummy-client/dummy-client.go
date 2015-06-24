@@ -71,10 +71,10 @@ func acceptLoop(ln *pt.SocksListener) error {
 	for {
 		conn, err := ln.AcceptSocks()
 		if err != nil {
-			if e, ok := err.(net.Error); ok && !e.Temporary() {
-				return err
+			if e, ok := err.(net.Error); ok && e.Temporary() {
+				continue
 			}
-			continue
+			return err
 		}
 		go handler(conn)
 	}
