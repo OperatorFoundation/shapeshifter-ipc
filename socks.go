@@ -136,6 +136,7 @@ func (ln *SocksListener) AcceptSocks() (*SocksConn, error) {
 	conn.Conn = c
 	err = conn.SetDeadline(time.Now().Add(socksRequestTimeout))
 	if err != nil {
+		conn.Close()
 		return nil, err
 	}
 	conn.Req, err = readSocks4aConnect(conn)
@@ -145,6 +146,7 @@ func (ln *SocksListener) AcceptSocks() (*SocksConn, error) {
 	}
 	err = conn.SetDeadline(time.Time{})
 	if err != nil {
+		conn.Close()
 		return nil, err
 	}
 	return conn, nil
