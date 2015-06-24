@@ -88,6 +88,11 @@ func main() {
 		os.Exit(1)
 	}
 
+	if ptInfo.ProxyURL != nil {
+		pt.ProxyError("proxy is not supported")
+		os.Exit(1)
+	}
+
 	listeners := make([]net.Listener, 0)
 	for _, methodName := range ptInfo.MethodNames {
 		switch methodName {

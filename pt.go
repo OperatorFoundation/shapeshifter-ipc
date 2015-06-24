@@ -39,6 +39,12 @@
 // 		if err != nil {
 // 			os.Exit(1)
 // 		}
+// 		if ptInfo.ProxyURL != nil {
+// 			// you need to interpret the proxy URL yourself
+// 			// call pt.ProxyDone instead if it's a type you understand
+// 			pt.ProxyError("proxy %s is not supported")
+// 			os.Exit(1)
+// 		}
 // 		for _, methodName := range ptInfo.MethodNames {
 // 			switch methodName {
 // 			case "foo":
@@ -119,6 +125,9 @@
 // Extended ORPort Authentication:
 // https://gitweb.torproject.org/torspec.git/tree/proposals/217-ext-orport-auth.txt.
 //
+// Pluggable Transport through SOCKS proxy:
+// https://gitweb.torproject.org/torspec.git/tree/proposals/232-pluggable-transports-through-proxy.txt
+//
 // The package implements a SOCKS4a server sufficient for a Tor client transport
 // plugin.
 //
@@ -135,6 +144,7 @@ import (
 	"fmt"
 	"io"
 	"net"
+	"net/url"
 	"os"
 	"strconv"
 	"strings"
@@ -286,6 +296,12 @@ func SmethodError(methodName, msg string) error {
 	return doError("SMETHOD-ERROR", methodName, msg)
 }
 
+// Emit a PROXY-ERROR line with explanation text. Returns a representation of
+// the error.
+func ProxyError(msg string) error {
+	return doError("PROXY-ERROR %s\n", msg)
+}
+
 // Emit a CMETHOD line. socks must be "socks4" or "socks5". Call this once for
 // each listening client SOCKS port.
 func Cmethod(name string, socks string, addr net.Addr) {
@@ -324,6 +340,11 @@ func SmethodArgs(name string, addr net.Addr, args Args) {
 // Emit an SMETHODS DONE line. Call this after opening all server listeners.
 func SmethodsDone() {
 	line("SMETHODS", "DONE")
+}
+
+// Emit a PROXY DONE line. Call this after parsing ClientInfo.ProxyURL.
+func ProxyDone() {
+	fmt.Fprintf(Stdout, "PROXY DONE\n")
 }
 
 // Get a pluggable transports version offered by Tor and understood by us, if
@@ -370,10 +391,48 @@ func getClientTransports(star []string) ([]string, error) {
 	return strings.Split(clientTransports, ","), nil
 }
 
+// Get the upstream proxy URL. Returns nil if no proxy is requested. The
+// function ensures that the Scheme and Host fields are set; i.e., that the URL
+// is absolute. It additionally checks that the Host field contains both a host
+// and a port part. This function reads the environment variable TOR_PT_PROXY.
+//
+// This function doesn't check that the scheme is one of Tor's supported proxy
+// schemes; that is, one of "http", "socks5", or "socks4a". The caller must be
+// able to handle any returned scheme (which may be by calling ProxyError if
+// it doesn't know how to handle the scheme).
+func getProxyURL() (*url.URL, error) {
+	rawurl := os.Getenv("TOR_PT_PROXY")
+	if rawurl == "" {
+		return nil, nil
+	}
+	u, err := url.Parse(rawurl)
+	if err != nil {
+		return nil, err
+	}
+	if u.Scheme == "" {
+		return nil, fmt.Errorf("missing scheme")
+	}
+	if u.Host == "" {
+		return nil, fmt.Errorf("missing authority")
+	}
+	host, port, err := net.SplitHostPort(u.Host)
+	if err != nil {
+		return nil, err
+	}
+	if host == "" {
+		return nil, fmt.Errorf("missing host")
+	}
+	if port == "" {
+		return nil, fmt.Errorf("missing port")
+	}
+	return u, nil
+}
+
 // This structure is returned by ClientSetup. It consists of a list of method
-// names.
+// names and the upstream proxy URL, if any.
 type ClientInfo struct {
 	MethodNames []string
+	ProxyURL    *url.URL
 }
 
 // Check the client pluggable transports environment, emitting an error message
@@ -397,6 +456,11 @@ func ClientSetup(star []string) (info ClientInfo, err error) {
 	line("VERSION", ver)
 
 	info.MethodNames, err = getClientTransports(star)
+	if err != nil {
+		return
+	}
+
+	info.ProxyURL, err = getProxyURL()
 	if err != nil {
 		return
 	}
