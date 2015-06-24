@@ -704,19 +704,19 @@ func TestExtOrPortRecvCommand(t *testing.T) {
 }
 
 // set up so that extOrPortSetup can write to one buffer and read from another.
-type MockSetupBuf struct {
+type mockSetupBuf struct {
 	bytes.Buffer
 	ReadBuf bytes.Buffer
 }
 
-func (buf *MockSetupBuf) Read(p []byte) (int, error) {
+func (buf *mockSetupBuf) Read(p []byte) (int, error) {
 	n, err := buf.ReadBuf.Read(p)
 	return n, err
 }
 
 func testExtOrPortSetupIndividual(t *testing.T, addr, methodName string) {
 	var err error
-	var buf MockSetupBuf
+	var buf mockSetupBuf
 	// fake an OKAY response.
 	err = extOrPortSendCommand(&buf.ReadBuf, extOrCmdOkay, []byte{})
 	if err != nil {
