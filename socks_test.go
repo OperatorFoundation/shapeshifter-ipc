@@ -2,8 +2,11 @@ package pt
 
 import (
 	"bytes"
+	"errors"
+	"io"
 	"net"
 	"testing"
+	"time"
 )
 
 func TestReadSocks4aConnect(t *testing.T) {
@@ -158,5 +161,109 @@ func TestSendSocks4aResponse(t *testing.T) {
 			t.Errorf("0x%02x %s → %v (expected %v)",
 				test.code, &test.addr, output, test.expected)
 		}
+	}
+}
+
+var fakeListenerDistinguishedError = errors.New("distinguished error")
+
+// fakeListener is a fake dummy net.Listener that returns the given net.Conn and
+// error the first time Accept is called. After the first call, it returns
+// (nil, fakeListenerDistinguishedError).
+type fakeListener struct {
+	c   net.Conn
+	err error
+}
+
+func (ln *fakeListener) Accept() (net.Conn, error) {
+	c := ln.c
+	err := ln.err
+	ln.c = nil
+	ln.err = fakeListenerDistinguishedError
+	return c, err
+}
+
+func (ln *fakeListener) Close() error {
+	return nil
+}
+
+func (ln *fakeListener) Addr() net.Addr {
+	return &net.TCPAddr{IP: net.ParseIP("127.0.0.1"), Port: 0, Zone: ""}
+}
+
+// A trivial net.Error that lets you control whether it is considered Temporary.
+type netError struct {
+	errString string
+	temporary bool
+}
+
+func (e *netError) Error() string {
+	return e.errString
+}
+
+func (e *netError) Temporary() bool {
+	return e.temporary
+}
+
+func (e *netError) Timeout() bool {
+	return false
+}
+
+// The purpose of ignoreDeadlineConn is to wrap net.Pipe so that the deadline
+// functions don't return an error ("net.Pipe does not support deadlines").
+type ignoreDeadlineConn struct {
+	net.Conn
+}
+
+func (c *ignoreDeadlineConn) SetDeadline(t time.Time) error {
+	return nil
+}
+
+func (c *ignoreDeadlineConn) SetReadDeadline(t time.Time) error {
+	return nil
+}
+
+func (c *ignoreDeadlineConn) SetWriteDeadline(t time.Time) error {
+	return nil
+}
+
+func TestAcceptErrors(t *testing.T) {
+	// Check that AcceptSocks accurately reflects net.Errors returned by the
+	// underlying call to Accept. This is important for the handling of
+	// Temporary and non-Temporary errors. The loop iterates over
+	// non-net.Error, non-Temporary net.Error, and Temporary net.Error.
+	for _, expectedErr := range []error{io.EOF, &netError{"non-temp", false}, &netError{"temp", true}} {
+		ln := NewSocksListener(&fakeListener{nil, expectedErr})
+		_, err := ln.AcceptSocks()
+		if expectedNerr, ok := expectedErr.(net.Error); ok {
+			nerr, ok := err.(net.Error)
+			if !ok {
+				t.Errorf("AcceptSocks returned non-net.Error %v", nerr)
+			} else {
+				if expectedNerr.Temporary() != expectedNerr.Temporary() {
+					t.Errorf("AcceptSocks did not keep Temporary status of net.Error: %v", nerr)
+				}
+			}
+		}
+	}
+
+	c1, c2 := net.Pipe()
+	go func() {
+		// Bogus request: SOCKS 5 then EOF.
+		c2.Write([]byte("\x05\x01\x00"))
+		c2.Close()
+	}()
+	ln := NewSocksListener(&fakeListener{c: &ignoreDeadlineConn{c1}, err: nil})
+	_, err := ln.AcceptSocks()
+	// The error in parsing the SOCKS request must be either silently
+	// ignored, or else must be a Temporary net.Error. I.e., it must not be
+	// the io.ErrUnexpectedEOF caused by the short request.
+	if err == fakeListenerDistinguishedError {
+		// Was silently ignored.
+	} else if nerr, ok := err.(net.Error); ok {
+		if !nerr.Temporary() {
+			t.Errorf("AcceptSocks returned non-Temporary net.Error: %v", nerr)
+		}
+	} else {
+		t.Errorf("AcceptSocks returned non-net.Error: %v", err)
 	}
 }
