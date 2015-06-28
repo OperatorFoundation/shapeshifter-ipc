@@ -80,7 +80,7 @@ func acceptLoop(ln net.Listener) error {
 func main() {
 	var err error
 
-	ptInfo, err = pt.ServerSetup([]string{"dummy"})
+	ptInfo, err = pt.ServerSetup(nil)
 	if err != nil {
 		os.Exit(1)
 	}

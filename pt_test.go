@@ -139,81 +139,51 @@ func tcpAddrsEqual(a, b *net.TCPAddr) bool {
 func TestGetClientTransports(t *testing.T) {
 	tests := [...]struct {
 		ptClientTransports string
-		star               []string
 		expected           []string
 	}{
 		{
-			"*",
-			[]string{},
-			[]string{},
+			"alpha",
+			[]string{"alpha"},
 		},
 		{
-			"*",
-			[]string{"alpha", "beta", "gamma"},
-			[]string{"alpha", "beta", "gamma"},
+			"alpha,beta",
+			[]string{"alpha", "beta"},
 		},
 		{
 			"alpha,beta,gamma",
 			[]string{"alpha", "beta", "gamma"},
-			[]string{"alpha", "beta", "gamma"},
 		},
+		// In the past, "*" meant to return all known transport names.
+		// But now it has no special meaning.
+		// https://trac.torproject.org/projects/tor/ticket/15612
 		{
-			"alpha,beta",
-			[]string{"alpha", "beta", "gamma"},
-			[]string{"alpha", "beta"},
+			"*",
+			[]string{"*"},
 		},
-		{
-			"alpha",
-			[]string{"alpha", "beta", "gamma"},
-			[]string{"alpha"},
-		},
-		{
-			"alpha,beta,gamma",
-			[]string{},
-			[]string{"alpha", "beta", "gamma"},
-		},
-		{
-			"alpha,beta",
-			[]string{},
-			[]string{"alpha", "beta"},
-		},
-		{
-			"alpha",
-			[]string{},
-			[]string{"alpha"},
-		},
-		// my reading of pt-spec.txt says that "*" has special meaning
-		// only when it is the entirety of the environment variable.
 		{
 			"alpha,*,gamma",
-			[]string{"alpha", "beta", "gamma"},
 			[]string{"alpha", "*", "gamma"},
-		},
-		{
-			"alpha",
-			[]string{"beta"},
-			[]string{"alpha"},
 		},
 	}
 
 	Stdout = ioutil.Discard
 
 	os.Clearenv()
-	_, err := getClientTransports([]string{"alpha", "beta", "gamma"})
+	_, err := getClientTransports()
 	if err == nil {
 		t.Errorf("empty environment unexpectedly succeeded")
 	}
 
 	for _, test := range tests {
 		os.Setenv("TOR_PT_CLIENT_TRANSPORTS", test.ptClientTransports)
-		output, err := getClientTransports(test.star)
+		output, err := getClientTransports()
 		if err != nil {
 			t.Errorf("TOR_PT_CLIENT_TRANSPORTS=%q unexpectedly returned an error: %s",
 				test.ptClientTransports, err)
 		}
 		if !stringSetsEqual(output, test.expected) {
-			t.Errorf("TOR_PT_CLIENT_TRANSPORTS=%q %q → %q (expected %q)",
-				test.ptClientTransports, test.star, output, test.expected)
+			t.Errorf("TOR_PT_CLIENT_TRANSPORTS=%q → %q (expected %q)",
+				test.ptClientTransports, output, test.expected)
 		}
 	}
 }
@@ -296,48 +266,41 @@ func TestGetServerBindaddrs(t *testing.T) {
 		ptServerBindaddr         string
 		ptServerTransports       string
 		ptServerTransportOptions string
-		star                     []string
 	}{
 		// bad TOR_PT_SERVER_BINDADDR
 		{
 			"alpha",
 			"alpha",
 			"",
-			[]string{"alpha", "beta", "gamma"},
 		},
 		{
 			"alpha-1.2.3.4",
 			"alpha",
 			"",
-			[]string{"alpha", "beta", "gamma"},
 		},
 		// missing TOR_PT_SERVER_TRANSPORTS
 		{
 			"alpha-1.2.3.4:1111",
 			"",
 			"alpha:key=value",
-			[]string{"alpha"},
 		},
 		// bad TOR_PT_SERVER_TRANSPORT_OPTIONS
 		{
 			"alpha-1.2.3.4:1111",
 			"alpha",
 			"key=value",
-			[]string{"alpha"},
 		},
 	}
 	goodTests := [...]struct {
 		ptServerBindaddr         string
 		ptServerTransports       string
 		ptServerTransportOptions string
-		star                     []string
 		expected                 []Bindaddr
 	}{
 		{
 			"alpha-1.2.3.4:1111,beta-[1:2::3:4]:2222",
 			"alpha,beta,gamma",
 			"alpha:k1=v1,beta:k2=v2,gamma:k3=v3",
-			[]string{"alpha", "beta"},
 			[]Bindaddr{
 				{"alpha", &net.TCPAddr{IP: net.ParseIP("1.2.3.4"), Port: 1111}, Args{"k1": []string{"v1"}}},
 				{"beta", &net.TCPAddr{IP: net.ParseIP("1:2::3:4"), Port: 2222}, Args{"k2": []string{"v2"}}},
@@ -347,33 +310,12 @@ func TestGetServerBindaddrs(t *testing.T) {
 			"alpha-1.2.3.4:1111",
 			"xxx",
 			"",
-			[]string{"alpha", "beta", "gamma"},
 			[]Bindaddr{},
 		},
 		{
 			"alpha-1.2.3.4:1111",
 			"alpha,beta,gamma",
 			"",
-			[]string{},
-			[]Bindaddr{
-				{"alpha", &net.TCPAddr{IP: net.ParseIP("1.2.3.4"), Port: 1111}, Args{}},
-			},
-		},
-		{
-			"alpha-1.2.3.4:1111,beta-[1:2::3:4]:2222",
-			"*",
-			"",
-			[]string{"alpha", "beta"},
-			[]Bindaddr{
-				{"alpha", &net.TCPAddr{IP: net.ParseIP("1.2.3.4"), Port: 1111}, Args{}},
-				{"beta", &net.TCPAddr{IP: net.ParseIP("1:2::3:4"), Port: 2222}, Args{}},
-			},
-		},
-		{
-			"alpha-1.2.3.4:1111,beta-[1:2::3:4]:2222",
-			"*",
-			"",
-			[]string{"alpha", "gamma"},
 			[]Bindaddr{
 				{"alpha", &net.TCPAddr{IP: net.ParseIP("1.2.3.4"), Port: 1111}, Args{}},
 			},
@@ -382,18 +324,26 @@ func TestGetServerBindaddrs(t *testing.T) {
 			"trebuchet-127.0.0.1:1984,ballista-127.0.0.1:4891",
 			"trebuchet,ballista",
 			"trebuchet:secret=nou;trebuchet:cache=/tmp/cache;ballista:secret=yes",
-			[]string{"trebuchet", "ballista"},
 			[]Bindaddr{
 				{"trebuchet", &net.TCPAddr{IP: net.ParseIP("127.0.0.1"), Port: 1984}, Args{"secret": []string{"nou"}, "cache": []string{"/tmp/cache"}}},
 				{"ballista", &net.TCPAddr{IP: net.ParseIP("127.0.0.1"), Port: 4891}, Args{"secret": []string{"yes"}}},
 			},
+		},
+		// In the past, "*" meant to return all known transport names.
+		// But now it has no special meaning.
+		// https://trac.torproject.org/projects/tor/ticket/15612
+		{
+			"alpha-1.2.3.4:1111,beta-[1:2::3:4]:2222",
+			"*",
+			"",
+			[]Bindaddr{},
 		},
 	}
 
 	Stdout = ioutil.Discard
 
 	os.Clearenv()
-	_, err := getServerBindaddrs([]string{"alpha", "beta", "gamma"})
+	_, err := getServerBindaddrs()
 	if err == nil {
 		t.Errorf("empty environment unexpectedly succeeded")
 	}
@@ -402,10 +352,10 @@ func TestGetServerBindaddrs(t *testing.T) {
 		os.Setenv("TOR_PT_SERVER_BINDADDR", test.ptServerBindaddr)
 		os.Setenv("TOR_PT_SERVER_TRANSPORTS", test.ptServerTransports)
 		os.Setenv("TOR_PT_SERVER_TRANSPORT_OPTIONS", test.ptServerTransportOptions)
-		_, err := getServerBindaddrs(test.star)
+		_, err := getServerBindaddrs()
 		if err == nil {
-			t.Errorf("TOR_PT_SERVER_BINDADDR=%q TOR_PT_SERVER_TRANSPORTS=%q TOR_PT_SERVER_TRANSPORT_OPTIONS=%q %q unexpectedly succeeded",
-				test.ptServerBindaddr, test.ptServerTransports, test.ptServerTransportOptions, test.star)
+			t.Errorf("TOR_PT_SERVER_BINDADDR=%q TOR_PT_SERVER_TRANSPORTS=%q TOR_PT_SERVER_TRANSPORT_OPTIONS=%q unexpectedly succeeded",
+				test.ptServerBindaddr, test.ptServerTransports, test.ptServerTransportOptions)
 		}
 	}
 
@@ -413,14 +363,14 @@ func TestGetServerBindaddrs(t *testing.T) {
 		os.Setenv("TOR_PT_SERVER_BINDADDR", test.ptServerBindaddr)
 		os.Setenv("TOR_PT_SERVER_TRANSPORTS", test.ptServerTransports)
 		os.Setenv("TOR_PT_SERVER_TRANSPORT_OPTIONS", test.ptServerTransportOptions)
-		output, err := getServerBindaddrs(test.star)
+		output, err := getServerBindaddrs()
 		if err != nil {
-			t.Errorf("TOR_PT_SERVER_BINDADDR=%q TOR_PT_SERVER_TRANSPORTS=%q TOR_PT_SERVER_TRANSPORT_OPTIONS=%q %q unexpectedly returned an error: %s",
-				test.ptServerBindaddr, test.ptServerTransports, test.ptServerTransportOptions, test.star, err)
+			t.Errorf("TOR_PT_SERVER_BINDADDR=%q TOR_PT_SERVER_TRANSPORTS=%q TOR_PT_SERVER_TRANSPORT_OPTIONS=%q unexpectedly returned an error: %s",
+				test.ptServerBindaddr, test.ptServerTransports, test.ptServerTransportOptions, err)
 		}
 		if !bindaddrSetsEqual(output, test.expected) {
-			t.Errorf("TOR_PT_SERVER_BINDADDR=%q TOR_PT_SERVER_TRANSPORTS=%q TOR_PT_SERVER_TRANSPORT_OPTIONS=%q %q → %q (expected %q)",
-				test.ptServerBindaddr, test.ptServerTransports, test.ptServerTransportOptions, test.star, output, test.expected)
+			t.Errorf("TOR_PT_SERVER_BINDADDR=%q TOR_PT_SERVER_TRANSPORTS=%q TOR_PT_SERVER_TRANSPORT_OPTIONS=%q → %q (expected %q)",
+				test.ptServerBindaddr, test.ptServerTransports, test.ptServerTransportOptions, output, test.expected)
 		}
 	}
 }

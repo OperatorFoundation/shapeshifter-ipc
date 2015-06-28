@@ -83,7 +83,7 @@ func acceptLoop(ln *pt.SocksListener) error {
 func main() {
 	var err error
 
-	ptInfo, err = pt.ClientSetup([]string{"dummy"})
+	ptInfo, err = pt.ClientSetup(nil)
 	if err != nil {
 		os.Exit(1)
 	}

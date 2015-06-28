@@ -35,7 +35,7 @@
 // 	...
 // 	func main() {
 // 		var err error
-// 		ptInfo, err = pt.ClientSetup([]string{"foo"})
+// 		ptInfo, err = pt.ClientSetup(nil)
 // 		if err != nil {
 // 			os.Exit(1)
 // 		}
@@ -92,7 +92,7 @@
 // 	...
 // 	func main() {
 // 		var err error
-// 		ptInfo, err = pt.ServerSetup([]string{"foo"})
+// 		ptInfo, err = pt.ServerSetup(nil)
 // 		if err != nil {
 // 			os.Exit(1)
 // 		}
@@ -377,16 +377,12 @@ func MakeStateDir() (string, error) {
 	return dir, err
 }
 
-// Get the intersection of the method names offered by Tor and those in
-// methodNames. This function reads the environment variable
-// TOR_PT_CLIENT_TRANSPORTS.
-func getClientTransports(star []string) ([]string, error) {
+// Get the list of method names requested by Tor. This function reads the
+// environment variable TOR_PT_CLIENT_TRANSPORTS.
+func getClientTransports() ([]string, error) {
 	clientTransports, err := getenvRequired("TOR_PT_CLIENT_TRANSPORTS")
 	if err != nil {
 		return nil, err
-	}
-	if clientTransports == "*" {
-		return star, nil
 	}
 	return strings.Split(clientTransports, ","), nil
 }
@@ -436,9 +432,8 @@ type ClientInfo struct {
 }
 
 // Check the client pluggable transports environment, emitting an error message
-// and returning a non-nil error if any error is encountered. star is the list
-// of method names to use in case "*" is requested by Tor. Returns a ClientInfo
-// struct.
+// and returning a non-nil error if any error is encountered. Returns a
+// ClientInfo struct.
 //
 // If your program needs to know whether to call ClientSetup or ServerSetup
 // (i.e., if the same program can be run as either a client or a server), check
@@ -448,14 +443,20 @@ type ClientInfo struct {
 // 	} else {
 // 		// Server mode; call pt.ServerSetup.
 // 	}
-func ClientSetup(star []string) (info ClientInfo, err error) {
+//
+// Always pass nil for the unused single parameter. In the past, the parameter
+// was a list of transport names to use in case Tor requested "*". That feature
+// was never implemented and has been removed from the pluggable transports
+// specification.
+// https://trac.torproject.org/projects/tor/ticket/15612
+func ClientSetup(_ []string) (info ClientInfo, err error) {
 	ver, err := getManagedTransportVer()
 	if err != nil {
 		return
 	}
 	line("VERSION", ver)
 
-	info.MethodNames, err = getClientTransports(star)
+	info.MethodNames, err = getClientTransports()
 	if err != nil {
 		return
 	}
@@ -537,11 +538,9 @@ func filterBindaddrs(addrs []Bindaddr, methodNames []string) []Bindaddr {
 }
 
 // Return an array of Bindaddrs, being the contents of TOR_PT_SERVER_BINDADDR
-// with keys filtered by TOR_PT_SERVER_TRANSPORTS. If TOR_PT_SERVER_TRANSPORTS
-// is "*", then keys are filtered by the entries in star instead.
-// Transport-specific options from TOR_PT_SERVER_TRANSPORT_OPTIONS are assigned
-// to the Options member.
-func getServerBindaddrs(star []string) ([]Bindaddr, error) {
+// with keys filtered by TOR_PT_SERVER_TRANSPORTS. Transport-specific options
+// from TOR_PT_SERVER_TRANSPORT_OPTIONS are assigned to the Options member.
+func getServerBindaddrs() ([]Bindaddr, error) {
 	var result []Bindaddr
 
 	// Parse the list of server transport options.
@@ -578,11 +577,7 @@ func getServerBindaddrs(star []string) ([]Bindaddr, error) {
 	if err != nil {
 		return nil, err
 	}
-	if serverTransports == "*" {
-		result = filterBindaddrs(result, star)
-	} else {
-		result = filterBindaddrs(result, strings.Split(serverTransports, ","))
-	}
+	result = filterBindaddrs(result, strings.Split(serverTransports, ","))
 
 	return result, nil
 }
@@ -634,10 +629,9 @@ type ServerInfo struct {
 }
 
 // Check the server pluggable transports environment, emitting an error message
-// and returning a non-nil error if any error is encountered. star is the list
-// of method names to use in case "*" is requested by Tor. Resolves the various
-// requested bind addresses, the server ORPort and extended ORPort, and reads
-// the auth cookie file. Returns a ServerInfo struct.
+// and returning a non-nil error if any error is encountered. Resolves the
+// various requested bind addresses, the server ORPort and extended ORPort, and
+// reads the auth cookie file. Returns a ServerInfo struct.
 //
 // If your program needs to know whether to call ClientSetup or ServerSetup
 // (i.e., if the same program can be run as either a client or a server), check
@@ -647,14 +641,20 @@ type ServerInfo struct {
 // 	} else {
 // 		// Server mode; call pt.ServerSetup.
 // 	}
-func ServerSetup(star []string) (info ServerInfo, err error) {
+//
+// Always pass nil for the unused single parameter. In the past, the parameter
+// was a list of transport names to use in case Tor requested "*". That feature
+// was never implemented and has been removed from the pluggable transports
+// specification.
+// https://trac.torproject.org/projects/tor/ticket/15612
+func ServerSetup(_ []string) (info ServerInfo, err error) {
 	ver, err := getManagedTransportVer()
 	if err != nil {
 		return
 	}
 	line("VERSION", ver)
 
-	info.Bindaddrs, err = getServerBindaddrs(star)
+	info.Bindaddrs, err = getServerBindaddrs()
 	if err != nil {
 		return
 	}
