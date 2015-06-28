@@ -138,9 +138,9 @@ func tcpAddrsEqual(a, b *net.TCPAddr) bool {
 
 func TestGetClientTransports(t *testing.T) {
 	tests := [...]struct {
-		ptServerClientTransports string
-		star                     []string
-		expected                 []string
+		ptClientTransports string
+		star               []string
+		expected           []string
 	}{
 		{
 			"*",
@@ -205,15 +205,15 @@ func TestGetClientTransports(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		os.Setenv("TOR_PT_CLIENT_TRANSPORTS", test.ptServerClientTransports)
+		os.Setenv("TOR_PT_CLIENT_TRANSPORTS", test.ptClientTransports)
 		output, err := getClientTransports(test.star)
 		if err != nil {
 			t.Errorf("TOR_PT_CLIENT_TRANSPORTS=%q unexpectedly returned an error: %s",
-				test.ptServerClientTransports, err)
+				test.ptClientTransports, err)
 		}
 		if !stringSetsEqual(output, test.expected) {
 			t.Errorf("TOR_PT_CLIENT_TRANSPORTS=%q %q → %q (expected %q)",
-				test.ptServerClientTransports, test.star, output, test.expected)
+				test.ptClientTransports, test.star, output, test.expected)
 		}
 	}
 }
