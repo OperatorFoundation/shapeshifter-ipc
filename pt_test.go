@@ -164,6 +164,11 @@ func TestGetClientTransports(t *testing.T) {
 			"alpha,*,gamma",
 			[]string{"alpha", "*", "gamma"},
 		},
+		// No escaping is defined for TOR_PT_CLIENT_TRANSPORTS.
+		{
+			`alpha\,beta`,
+			[]string{`alpha\`, `beta`},
+		},
 	}
 
 	Stdout = ioutil.Discard
@@ -289,6 +294,13 @@ func TestGetServerBindaddrs(t *testing.T) {
 			"alpha-1.2.3.4:1111",
 			"alpha",
 			"key=value",
+		},
+		// no escaping is defined for TOR_PT_SERVER_TRANSPORTS or
+		// TOR_PT_SERVER_BINDADDR.
+		{
+			`alpha\,beta-1.2.3.4:1111`,
+			`alpha\,beta`,
+			"",
 		},
 	}
 	goodTests := [...]struct {
