@@ -668,18 +668,23 @@ func ServerSetup(_ []string) (info ServerInfo, err error) {
 		}
 	}
 
+	info.AuthCookiePath = getenv("TOR_PT_AUTH_COOKIE_FILE")
+
 	extendedOrPort := getenv("TOR_PT_EXTENDED_SERVER_PORT")
 	if extendedOrPort != "" {
+		if info.AuthCookiePath == "" {
+			err = envError("need TOR_PT_AUTH_COOKIE_FILE environment variable with TOR_PT_EXTENDED_SERVER_PORT")
+			return
+		}
 		info.ExtendedOrAddr, err = resolveAddr(extendedOrPort)
 		if err != nil {
 			err = envError(fmt.Sprintf("cannot resolve TOR_PT_EXTENDED_SERVER_PORT %q: %s", extendedOrPort, err.Error()))
 			return
 		}
 	}
-	info.AuthCookiePath = getenv("TOR_PT_AUTH_COOKIE_FILE")
 
 	// Need either OrAddr or ExtendedOrAddr.
-	if info.OrAddr == nil && (info.ExtendedOrAddr == nil || info.AuthCookiePath == "") {
+	if info.OrAddr == nil && info.ExtendedOrAddr == nil {
 		err = envError("need TOR_PT_ORPORT or TOR_PT_EXTENDED_SERVER_PORT environment variable")
 		return
 	}
