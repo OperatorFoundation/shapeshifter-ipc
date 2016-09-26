@@ -113,7 +113,7 @@
 // 		pt.SmethodsDone()
 // 	}
 //
-// Some additional care is needed to handle SIGINT and shutdown properly. See
+// Some additional care is needed to handle signals and shutdown properly. See
 // the example programs dummy-client and dummy-server.
 //
 // Tor pluggable transports specification:

@@ -114,9 +114,9 @@ func main() {
 	var numHandlers int = 0
 	var sig os.Signal
 	sigChan := make(chan os.Signal, 1)
-	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
+	signal.Notify(sigChan, syscall.SIGTERM)
 
-	// wait for first signal
+	// keep track of handlers and wait for a signal
 	sig = nil
 	for sig == nil {
 		select {
@@ -125,21 +125,15 @@ func main() {
 		case sig = <-sigChan:
 		}
 	}
+
+	// signal received, shut down
 	for _, ln := range listeners {
 		ln.Close()
 	}
-
-	if sig == syscall.SIGTERM {
-		return
-	}
-
-	// wait for second signal or no more handlers
-	sig = nil
-	for sig == nil && numHandlers != 0 {
-		select {
-		case n := <-handlerChan:
-			numHandlers += n
-		case sig = <-sigChan:
+	for n := range handlerChan {
+		numHandlers += n
+		if numHandlers == 0 {
+			break
 		}
 	}
 }
