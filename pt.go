@@ -199,12 +199,12 @@ func (err *ptErr) Error() string {
 	return formatline(err.Keyword, err.Args...)
 }
 
-func getenv(key string) string {
+func Getenv(key string) string {
 	return os.Getenv(key)
 }
 
 // Returns an ENV-ERROR if the environment variable isn't set.
-func getenvRequired(key string) (string, error) {
+func GetenvRequired(key string) (string, error) {
 	value := os.Getenv(key)
 	if value == "" {
 		return "", envError(fmt.Sprintf("no %s environment variable", key))
@@ -353,7 +353,7 @@ func ProxyDone() {
 // environment variable TOR_PT_MANAGED_TRANSPORT_VER.
 func getManagedTransportVer() (string, error) {
 	const transportVersion = "1"
-	managedTransportVer, err := getenvRequired("TOR_PT_MANAGED_TRANSPORT_VER")
+	managedTransportVer, err := GetenvRequired("TOR_PT_MANAGED_TRANSPORT_VER")
 	if err != nil {
 		return "", err
 	}
@@ -370,7 +370,7 @@ func getManagedTransportVer() (string, error) {
 // TOR_PT_STATE_LOCATION is not set or if there is an error creating the
 // directory.
 func MakeStateDir() (string, error) {
-	dir, err := getenvRequired("TOR_PT_STATE_LOCATION")
+	dir, err := GetenvRequired("TOR_PT_STATE_LOCATION")
 	if err != nil {
 		return "", err
 	}
@@ -381,7 +381,7 @@ func MakeStateDir() (string, error) {
 // Get the list of method names requested by Tor. This function reads the
 // environment variable TOR_PT_CLIENT_TRANSPORTS.
 func getClientTransports() ([]string, error) {
-	clientTransports, err := getenvRequired("TOR_PT_CLIENT_TRANSPORTS")
+	clientTransports, err := GetenvRequired("TOR_PT_CLIENT_TRANSPORTS")
 	if err != nil {
 		return nil, err
 	}
@@ -488,7 +488,7 @@ func parsePort(portStr string) (int, error) {
 // Resolve an address string into a net.TCPAddr. We are a bit more strict than
 // net.ResolveTCPAddr; we don't allow an empty host or port, and the host part
 // must be a literal IP address.
-func resolveAddr(addrStr string) (*net.TCPAddr, error) {
+func ResolveAddr(addrStr string) (*net.TCPAddr, error) {
 	ipStr, portStr, err := net.SplitHostPort(addrStr)
 	if err != nil {
 		// Before the fixing of bug #7011, tor doesn't put brackets around IPv6
@@ -523,7 +523,7 @@ func resolveAddr(addrStr string) (*net.TCPAddr, error) {
 
 // Return a new slice, the members of which are those members of addrs having a
 // MethodName in methodNames.
-func filterBindaddrs(addrs []Bindaddr, methodNames []string) []Bindaddr {
+func FilterBindaddrs(addrs []Bindaddr, methodNames []string) []Bindaddr {
 	var result []Bindaddr
 
 	for _, ba := range addrs {
@@ -545,14 +545,14 @@ func getServerBindaddrs() ([]Bindaddr, error) {
 	var result []Bindaddr
 
 	// Parse the list of server transport options.
-	serverTransportOptions := getenv("TOR_PT_SERVER_TRANSPORT_OPTIONS")
-	optionsMap, err := parseServerTransportOptions(serverTransportOptions)
+	serverTransportOptions := Getenv("TOR_PT_SERVER_TRANSPORT_OPTIONS")
+	optionsMap, err := ParseServerTransportOptions(serverTransportOptions)
 	if err != nil {
 		return nil, envError(fmt.Sprintf("TOR_PT_SERVER_TRANSPORT_OPTIONS: %q: %s", serverTransportOptions, err.Error()))
 	}
 
 	// Get the list of all requested bindaddrs.
-	serverBindaddr, err := getenvRequired("TOR_PT_SERVER_BINDADDR")
+	serverBindaddr, err := GetenvRequired("TOR_PT_SERVER_BINDADDR")
 	if err != nil {
 		return nil, err
 	}
@@ -564,7 +564,7 @@ func getServerBindaddrs() ([]Bindaddr, error) {
 			return nil, envError(fmt.Sprintf("TOR_PT_SERVER_BINDADDR: %q: doesn't contain \"-\"", spec))
 		}
 		bindaddr.MethodName = parts[0]
-		addr, err := resolveAddr(parts[1])
+		addr, err := ResolveAddr(parts[1])
 		if err != nil {
 			return nil, envError(fmt.Sprintf("TOR_PT_SERVER_BINDADDR: %q: %s", spec, err.Error()))
 		}
@@ -574,11 +574,11 @@ func getServerBindaddrs() ([]Bindaddr, error) {
 	}
 
 	// Filter by TOR_PT_SERVER_TRANSPORTS.
-	serverTransports, err := getenvRequired("TOR_PT_SERVER_TRANSPORTS")
+	serverTransports, err := GetenvRequired("TOR_PT_SERVER_TRANSPORTS")
 	if err != nil {
 		return nil, err
 	}
-	result = filterBindaddrs(result, strings.Split(serverTransports, ","))
+	result = FilterBindaddrs(result, strings.Split(serverTransports, ","))
 
 	return result, nil
 }
@@ -660,24 +660,24 @@ func ServerSetup(_ []string) (info ServerInfo, err error) {
 		return
 	}
 
-	orPort := getenv("TOR_PT_ORPORT")
+	orPort := Getenv("TOR_PT_ORPORT")
 	if orPort != "" {
-		info.OrAddr, err = resolveAddr(orPort)
+		info.OrAddr, err = ResolveAddr(orPort)
 		if err != nil {
 			err = envError(fmt.Sprintf("cannot resolve TOR_PT_ORPORT %q: %s", orPort, err.Error()))
 			return
 		}
 	}
 
-	info.AuthCookiePath = getenv("TOR_PT_AUTH_COOKIE_FILE")
+	info.AuthCookiePath = Getenv("TOR_PT_AUTH_COOKIE_FILE")
 
-	extendedOrPort := getenv("TOR_PT_EXTENDED_SERVER_PORT")
+	extendedOrPort := Getenv("TOR_PT_EXTENDED_SERVER_PORT")
 	if extendedOrPort != "" {
 		if info.AuthCookiePath == "" {
 			err = envError("need TOR_PT_AUTH_COOKIE_FILE environment variable with TOR_PT_EXTENDED_SERVER_PORT")
 			return
 		}
-		info.ExtendedOrAddr, err = resolveAddr(extendedOrPort)
+		info.ExtendedOrAddr, err = ResolveAddr(extendedOrPort)
 		if err != nil {
 			err = envError(fmt.Sprintf("cannot resolve TOR_PT_EXTENDED_SERVER_PORT %q: %s", extendedOrPort, err.Error()))
 			return

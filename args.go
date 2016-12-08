@@ -112,7 +112,7 @@ func parseClientParameters(s string) (args Args, err error) {
 // transport. Colons, semicolons, equal signs and backslashes must be escaped
 // with a backslash."
 // Example: trebuchet:secret=nou;trebuchet:cache=/tmp/cache;ballista:secret=yes
-func parseServerTransportOptions(s string) (opts map[string]Args, err error) {
+func ParseServerTransportOptions(s string) (opts map[string]Args, err error) {
 	opts = make(map[string]Args)
 	if len(s) == 0 {
 		return
