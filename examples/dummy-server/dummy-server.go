@@ -20,7 +20,7 @@ import (
 	"syscall"
 )
 
-import "git.torproject.org/pluggable-transports/goptlib.git"
+import "github.com/OperatorFoundation/shapeshifter-ipc"
 
 var ptInfo pt.ServerInfo
 
