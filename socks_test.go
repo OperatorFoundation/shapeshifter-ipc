@@ -3,8 +3,8 @@ package pt
 import (
 	"bufio"
 	"bytes"
-	"errors"
 	"encoding/hex"
+	"errors"
 	"io"
 	"net"
 	"testing"
@@ -108,7 +108,7 @@ func TestAuthUsernamePassword(t *testing.T) {
 	if method, err = socksNegotiateAuth(c.toBufio()); err != nil {
 		t.Error("socksNegotiateAuth(UsernamePassword) failed:", err)
 	}
-	if method != socksAuthUsernamePassword {
+	if method != socksAuthPrivateMethodPT2 {
 		t.Error("socksNegotiateAuth(UsernamePassword) unexpected method:", method)
 	}
 	if msg := c.readHex(); msg != "0502" {
@@ -232,7 +232,7 @@ func TestAuthBoth(t *testing.T) {
 	if method, err = socksNegotiateAuth(c.toBufio()); err != nil {
 		t.Error("socksNegotiateAuth(Both) failed:", err)
 	}
-	if method != socksAuthUsernamePassword {
+	if method != socksAuthPrivateMethodPT2 {
 		t.Error("socksNegotiateAuth(Both) unexpected method:", method)
 	}
 	if msg := c.readHex(); msg != "0502" {
@@ -271,90 +271,11 @@ func TestAuthUnsupported2(t *testing.T) {
 	if method, err = socksNegotiateAuth(c.toBufio()); err != nil {
 		t.Error("socksNegotiateAuth(Unknown2) failed:", err)
 	}
-	if method != socksAuthUsernamePassword {
+	if method != socksAuthPrivateMethodPT2 {
 		t.Error("socksNegotiateAuth(Unknown2) picked unexpected method:", method)
 	}
 	if msg := c.readHex(); msg != "0502" {
 		t.Error("socksNegotiateAuth(Unknown2) invalid response:", msg)
-	}
-}
-
-// TestRFC1929InvalidVersion tests RFC1929 auth with an invalid version.
-func TestRFC1929InvalidVersion(t *testing.T) {
-	c := new(testReadWriter)
-	var req SocksRequest
-
-	// VER = 03, ULEN = 5, UNAME = "ABCDE", PLEN = 5, PASSWD = "abcde"
-	c.writeHex("03054142434445056162636465")
-	if err := socksAuthenticate(c.toBufio(), socksAuthUsernamePassword, &req); err == nil {
-		t.Error("socksAuthenticate(InvalidVersion) succeded")
-	}
-	if msg := c.readHex(); msg != "0101" {
-		t.Error("socksAuthenticate(InvalidVersion) invalid response:", msg)
-	}
-}
-
-// TestRFC1929InvalidUlen tests RFC1929 auth with an invalid ULEN.
-func TestRFC1929InvalidUlen(t *testing.T) {
-	c := new(testReadWriter)
-	var req SocksRequest
-
-	// VER = 01, ULEN = 0, UNAME = "", PLEN = 5, PASSWD = "abcde"
-	c.writeHex("0100056162636465")
-	if err := socksAuthenticate(c.toBufio(), socksAuthUsernamePassword, &req); err == nil {
-		t.Error("socksAuthenticate(InvalidUlen) succeded")
-	}
-	if msg := c.readHex(); msg != "0101" {
-		t.Error("socksAuthenticate(InvalidUlen) invalid response:", msg)
-	}
-}
-
-// TestRFC1929InvalidPlen tests RFC1929 auth with an invalid PLEN.
-func TestRFC1929InvalidPlen(t *testing.T) {
-	c := new(testReadWriter)
-	var req SocksRequest
-
-	// VER = 01, ULEN = 5, UNAME = "ABCDE", PLEN = 0, PASSWD = ""
-	c.writeHex("0105414243444500")
-	if err := socksAuthenticate(c.toBufio(), socksAuthUsernamePassword, &req); err == nil {
-		t.Error("socksAuthenticate(InvalidPlen) succeded")
-	}
-	if msg := c.readHex(); msg != "0101" {
-		t.Error("socksAuthenticate(InvalidPlen) invalid response:", msg)
-	}
-}
-
-// TestRFC1929InvalidArgs tests RFC1929 auth with invalid pt args.
-func TestRFC1929InvalidPTArgs(t *testing.T) {
-	c := new(testReadWriter)
-	var req SocksRequest
-
-	// VER = 01, ULEN = 5, UNAME = "ABCDE", PLEN = 5, PASSWD = "abcde"
-	c.writeHex("01054142434445056162636465")
-	if err := socksAuthenticate(c.toBufio(), socksAuthUsernamePassword, &req); err == nil {
-		t.Error("socksAuthenticate(InvalidArgs) succeded")
-	}
-	if msg := c.readHex(); msg != "0101" {
-		t.Error("socksAuthenticate(InvalidArgs) invalid response:", msg)
-	}
-}
-
-// TestRFC1929Success tests RFC1929 auth with valid pt args.
-func TestRFC1929Success(t *testing.T) {
-	c := new(testReadWriter)
-	var req SocksRequest
-
-	// VER = 01, ULEN = 9, UNAME = "key=value", PLEN = 1, PASSWD = "\0"
-	c.writeHex("01096b65793d76616c75650100")
-	if err := socksAuthenticate(c.toBufio(), socksAuthUsernamePassword, &req); err != nil {
-		t.Error("socksAuthenticate(Success) failed:", err)
-	}
-	if msg := c.readHex(); msg != "0100" {
-		t.Error("socksAuthenticate(Success) invalid response:", msg)
-	}
-	v, ok := req.Args.Get("key")
-	if v != "value" || !ok {
-		t.Error("RFC1929 k,v parse failure:", v)
 	}
 }
 

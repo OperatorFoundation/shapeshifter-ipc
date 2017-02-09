@@ -2,6 +2,7 @@ package pt
 
 import (
 	"bufio"
+	"encoding/binary"
 	"fmt"
 	"io"
 	"net"
@@ -12,7 +13,7 @@ const (
 	socksVersion = 0x05
 
 	socksAuthNoneRequired        = 0x00
-	socksAuthUsernamePassword    = 0x02
+	socksAuthPrivateMethodPT2    = 0x80
 	socksAuthNoAcceptableMethods = 0xff
 
 	socksCmdConnect = 0x01
@@ -21,10 +22,6 @@ const (
 	socksAtypeV4         = 0x01
 	socksAtypeDomainName = 0x03
 	socksAtypeV6         = 0x04
-
-	socksAuthRFC1929Ver     = 0x01
-	socksAuthRFC1929Success = 0x00
-	socksAuthRFC1929Fail    = 0x01
 
 	socksRepSucceeded = 0x00
 	// "general SOCKS server failure"
@@ -52,11 +49,7 @@ const socksRequestTimeout = 5 * time.Second
 type SocksRequest struct {
 	// The endpoint requested by the client as a "host:port" string.
 	Target string
-	// The userid string sent by the client.
-	Username string
-	// The password string sent by the client.
-	Password string
-	// The parsed contents of Username as a key–value mapping.
+	// The parsed contents of private authentication method as a key–value mapping.
 	Args Args
 }
 
@@ -244,13 +237,13 @@ func socksNegotiateAuth(rw *bufio.ReadWriter) (method byte, err error) {
 	for _, m := range methods {
 		switch m {
 		case socksAuthNoneRequired:
-			// Pick Username/Password over None if the client happens to
+			// Pick PT 2.0 private authentication method over None if the client happens to
 			// send both.
 			if method == socksAuthNoAcceptableMethods {
 				method = m
 			}
 
-		case socksAuthUsernamePassword:
+		case socksAuthPrivateMethodPT2:
 			method = m
 		}
 	}
@@ -276,8 +269,8 @@ func socksAuthenticate(rw *bufio.ReadWriter, method byte, req *SocksRequest) (er
 	case socksAuthNoneRequired:
 		// Straight into reading the connect.
 
-	case socksAuthUsernamePassword:
-		if err = socksAuthRFC1929(rw, req); err != nil {
+	case socksAuthPrivateMethodPT2:
+		if err = socksAuthPT2(rw, req); err != nil {
 			return
 		}
 
@@ -296,68 +289,31 @@ func socksAuthenticate(rw *bufio.ReadWriter, method byte, req *SocksRequest) (er
 	return
 }
 
-// socksAuthRFC1929 authenticates the client via RFC 1929 username/password
-// auth.  As a design decision any valid username/password is accepted as this
-// field is primarily used as an out-of-band argument passing mechanism for
-// pluggable transports.
-func socksAuthRFC1929(rw *bufio.ReadWriter, req *SocksRequest) (err error) {
-	sendErrResp := func() {
-		// Swallow the write/flush error here, we are going to close the
-		// connection and the original failure is more useful.
-		resp := []byte{socksAuthRFC1929Ver, socksAuthRFC1929Fail}
-		rw.Write(resp[:])
-		socksFlushBuffers(rw)
+// socksAuthRFC1929 authenticates the client via Pluggable Transports 2.0, draft 1
+// private auth method.
+func socksAuthPT2(rw *bufio.ReadWriter, req *SocksRequest) (err error) {
+	// Read the authentication data.
+	var len uint32
+	if len, err = socksReadUint32(rw); err != nil {
+		return
 	}
-
-	// Validate the fixed parts of the command message.
-	if err = socksReadByteVerify(rw, "auth version", socksAuthRFC1929Ver); err != nil {
-		sendErrResp()
+	if len == 0 {
+		err = fmt.Errorf("PT 2.0 authentication data with 0 length")
+		return
+	}
+	var data []byte
+	if data, err = socksReadBytes(rw, int(len)); err != nil {
 		return
 	}
 
-	// Read the username.
-	var ulen byte
-	if ulen, err = socksReadByte(rw); err != nil {
-		return
-	}
-	if ulen < 1 {
-		sendErrResp()
-		err = fmt.Errorf("RFC1929 username with 0 length")
-		return
-	}
-	var uname []byte
-	if uname, err = socksReadBytes(rw, int(ulen)); err != nil {
-		return
-	}
-	req.Username = string(uname)
+	var result string = string(data)
 
-	// Read the password.
-	var plen byte
-	if plen, err = socksReadByte(rw); err != nil {
+	// Parse the authentication data according to the PT 2.0 specification
+	if req.Args, err = parsePT2ClientParameters(result); err != nil {
+		fmt.Println("Error parsing PT2 client parameters", err)
 		return
-	}
-	if plen < 1 {
-		sendErrResp()
-		err = fmt.Errorf("RFC1929 password with 0 length")
-		return
-	}
-	var passwd []byte
-	if passwd, err = socksReadBytes(rw, int(plen)); err != nil {
-		return
-	}
-	if !(plen == 1 && passwd[0] == 0x00) {
-		// tor will set the password to 'NUL' if there are no arguments.
-		req.Password = string(passwd)
 	}
 
-	// Mash the username/password together and parse it as a pluggable
-	// transport argument string.
-	if req.Args, err = parseClientParameters(req.Username + req.Password); err != nil {
-		sendErrResp()
-	} else {
-		resp := []byte{socksAuthRFC1929Ver, socksAuthRFC1929Success}
-		_, err = rw.Write(resp[:])
-	}
 	return
 }
 
@@ -483,6 +439,15 @@ func socksFlushBuffers(rw *bufio.ReadWriter) error {
 
 func socksReadByte(rw *bufio.ReadWriter) (byte, error) {
 	return rw.Reader.ReadByte()
+}
+
+func socksReadUint32(rw *bufio.ReadWriter) (uint32, error) {
+	buffer, err := socksReadBytes(rw, 4)
+	if err != nil {
+		return 0, err
+	}
+
+	return binary.BigEndian.Uint32(buffer), nil
 }
 
 func socksReadBytes(rw *bufio.ReadWriter, n int) ([]byte, error) {

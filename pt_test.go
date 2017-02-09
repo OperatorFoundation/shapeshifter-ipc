@@ -226,14 +226,14 @@ func TestResolveAddr(t *testing.T) {
 	}
 
 	for _, input := range badTests {
-		output, err := resolveAddr(input)
+		output, err := ResolveAddr(input)
 		if err == nil {
 			t.Errorf("%q unexpectedly succeeded: %q", input, output)
 		}
 	}
 
 	for _, test := range goodTests {
-		output, err := resolveAddr(test.input)
+		output, err := ResolveAddr(test.input)
 		if err != nil {
 			t.Errorf("%q unexpectedly returned an error: %s", test.input, err)
 		}
@@ -535,11 +535,11 @@ func TestExtOrSendUserAddr(t *testing.T) {
 		}
 		// test that parsing the address gives something equivalent to
 		// parsing the original.
-		inputAddr, err := resolveAddr(addr)
+		inputAddr, err := ResolveAddr(addr)
 		if err != nil {
 			t.Fatal(err)
 		}
-		outputAddr, err := resolveAddr(string(p[:n]))
+		outputAddr, err := ResolveAddr(string(p[:n]))
 		if err != nil {
 			t.Fatal(err)
 		}

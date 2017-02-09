@@ -301,14 +301,14 @@ func TestParseServerTransportOptions(t *testing.T) {
 	}
 
 	for _, input := range badTests {
-		_, err := parseServerTransportOptions(input)
+		_, err := ParseServerTransportOptions(input)
 		if err == nil {
 			t.Errorf("%q unexpectedly succeeded", input)
 		}
 	}
 
 	for _, test := range goodTests {
-		opts, err := parseServerTransportOptions(test.input)
+		opts, err := ParseServerTransportOptions(test.input)
 		if err != nil {
 			t.Errorf("%q unexpectedly returned an error: %s", test.input, err)
 		}

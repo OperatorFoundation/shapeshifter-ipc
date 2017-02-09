@@ -2,7 +2,9 @@ package pt
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
+	"log"
 	"sort"
 	"strings"
 )
@@ -103,6 +105,27 @@ func parseClientParameters(s string) (args Args, err error) {
 		// Skip the semicolon.
 		i++
 	}
+	return args, nil
+}
+
+func parsePT2ClientParameters(s string) (args Args, err error) {
+	args = make(Args)
+	if len(s) == 0 {
+		return
+	}
+
+	decoder := json.NewDecoder(strings.NewReader(s))
+	var result map[string]string
+	if err := decoder.Decode(&result); err != nil {
+		log.Fatal(err)
+		return nil, err
+	}
+	fmt.Println(result)
+
+	for key, value := range result {
+		args.Add(key, value)
+	}
+
 	return args, nil
 }
 
