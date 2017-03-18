@@ -54,7 +54,7 @@ func TestAuthInvalidVersion(t *testing.T) {
 
 	// VER = 03, NMETHODS = 01, METHODS = [00]
 	c.writeHex("030100")
-	if _, err := socksNegotiateAuth(c.toBufio()); err == nil {
+	if _, err := socksNegotiateAuth(c.toBufio(), false); err == nil {
 		t.Error("socksNegotiateAuth(InvalidVersion) succeded")
 	}
 }
@@ -67,7 +67,7 @@ func TestAuthInvalidNMethods(t *testing.T) {
 
 	// VER = 05, NMETHODS = 00
 	c.writeHex("0500")
-	if method, err = socksNegotiateAuth(c.toBufio()); err != nil {
+	if method, err = socksNegotiateAuth(c.toBufio(), false); err != nil {
 		t.Error("socksNegotiateAuth(No Methods) failed:", err)
 	}
 	if method != socksAuthNoAcceptableMethods {
@@ -86,7 +86,7 @@ func TestAuthNoneRequired(t *testing.T) {
 
 	// VER = 05, NMETHODS = 01, METHODS = [00]
 	c.writeHex("050100")
-	if method, err = socksNegotiateAuth(c.toBufio()); err != nil {
+	if method, err = socksNegotiateAuth(c.toBufio(), false); err != nil {
 		t.Error("socksNegotiateAuth(None) failed:", err)
 	}
 	if method != socksAuthNoneRequired {
@@ -105,7 +105,7 @@ func TestAuthUsernamePassword(t *testing.T) {
 
 	// VER = 05, NMETHODS = 01, METHODS = [02]
 	c.writeHex("050102")
-	if method, err = socksNegotiateAuth(c.toBufio()); err != nil {
+	if method, err = socksNegotiateAuth(c.toBufio(), false); err != nil {
 		t.Error("socksNegotiateAuth(UsernamePassword) failed:", err)
 	}
 	if method != socksAuthPrivateMethodPT2 {
@@ -229,7 +229,7 @@ func TestAuthBoth(t *testing.T) {
 
 	// VER = 05, NMETHODS = 02, METHODS = [00, 02]
 	c.writeHex("05020002")
-	if method, err = socksNegotiateAuth(c.toBufio()); err != nil {
+	if method, err = socksNegotiateAuth(c.toBufio(), false); err != nil {
 		t.Error("socksNegotiateAuth(Both) failed:", err)
 	}
 	if method != socksAuthPrivateMethodPT2 {
@@ -248,7 +248,7 @@ func TestAuthUnsupported(t *testing.T) {
 
 	// VER = 05, NMETHODS = 01, METHODS = [01] (GSSAPI)
 	c.writeHex("050101")
-	if method, err = socksNegotiateAuth(c.toBufio()); err != nil {
+	if method, err = socksNegotiateAuth(c.toBufio(), false); err != nil {
 		t.Error("socksNegotiateAuth(Unknown) failed:", err)
 	}
 	if method != socksAuthNoAcceptableMethods {
@@ -268,7 +268,7 @@ func TestAuthUnsupported2(t *testing.T) {
 
 	// VER = 05, NMETHODS = 03, METHODS = [00,01,02]
 	c.writeHex("0503000102")
-	if method, err = socksNegotiateAuth(c.toBufio()); err != nil {
+	if method, err = socksNegotiateAuth(c.toBufio(), false); err != nil {
 		t.Error("socksNegotiateAuth(Unknown2) failed:", err)
 	}
 	if method != socksAuthPrivateMethodPT2 {

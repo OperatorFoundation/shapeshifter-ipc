@@ -172,7 +172,7 @@ retry:
 		conn.Close()
 		goto retry
 	}
-	conn.Req, err = socks5Handshake(conn)
+	conn.Req, err = socks5Handshake(conn, false)
 	if err != nil {
 		conn.Close()
 		goto retry
@@ -193,12 +193,12 @@ func (ln *SocksListener) Version() string {
 // socks5handshake conducts the SOCKS5 handshake up to the point where the
 // client command is read and the proxy must open the outgoing connection.
 // Returns a SocksRequest.
-func socks5Handshake(s io.ReadWriter) (req SocksRequest, err error) {
+func socks5Handshake(s io.ReadWriter, needOptions bool) (req SocksRequest, err error) {
 	rw := bufio.NewReadWriter(bufio.NewReader(s), bufio.NewWriter(s))
 
 	// Negotiate the authentication method.
 	var method byte
-	if method, err = socksNegotiateAuth(rw); err != nil {
+	if method, err = socksNegotiateAuth(rw, needOptions); err != nil {
 		return
 	}
 
@@ -214,7 +214,7 @@ func socks5Handshake(s io.ReadWriter) (req SocksRequest, err error) {
 
 // socksNegotiateAuth negotiates the authentication method and returns the
 // selected method as a byte.  On negotiation failures an error is returned.
-func socksNegotiateAuth(rw *bufio.ReadWriter) (method byte, err error) {
+func socksNegotiateAuth(rw *bufio.ReadWriter, needOptions bool) (method byte, err error) {
 	// Validate the version.
 	if err = socksReadByteVerify(rw, "version", socksVersion); err != nil {
 		return
@@ -235,16 +235,30 @@ func socksNegotiateAuth(rw *bufio.ReadWriter) (method byte, err error) {
 	// Pick the most "suitable" method.
 	method = socksAuthNoAcceptableMethods
 	for _, m := range methods {
-		switch m {
-		case socksAuthNoneRequired:
-			// Pick PT 2.0 private authentication method over None if the client happens to
-			// send both.
-			if method == socksAuthNoAcceptableMethods {
+		if needOptions {
+			switch m {
+			case socksAuthNoneRequired:
+				// Pick PT 2.0 private authentication method over None if the client happens to
+				// send both and SOCKS header options are needed.
+				if method == socksAuthNoAcceptableMethods {
+					method = m
+				}
+
+			case socksAuthPrivateMethodPT2:
 				method = m
 			}
+		} else {
+			switch m {
+			case socksAuthPrivateMethodPT2:
+				// Pick None over PT 2.0 private authentication method if the client happens to
+				// send both and SOCKS header options are not needed.
+				if method == socksAuthNoAcceptableMethods {
+					method = m
+				}
 
-		case socksAuthPrivateMethodPT2:
-			method = m
+			case socksAuthNoneRequired:
+				method = m
+			}
 		}
 	}
 
@@ -309,7 +323,7 @@ func socksAuthPT2(rw *bufio.ReadWriter, req *SocksRequest) (err error) {
 	var result string = string(data)
 
 	// Parse the authentication data according to the PT 2.0 specification
-	if req.Args, err = parsePT2ClientParameters(result); err != nil {
+	if req.Args, err = ParsePT2ClientParameters(result); err != nil {
 		fmt.Println("Error parsing PT2 client parameters", err)
 		return
 	}
