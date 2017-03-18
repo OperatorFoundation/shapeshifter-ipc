@@ -108,7 +108,7 @@ func parseClientParameters(s string) (args Args, err error) {
 	return args, nil
 }
 
-func parsePT2ClientParameters(s string) (args Args, err error) {
+func ParsePT2ClientParameters(s string) (args Args, err error) {
 	args = make(Args)
 	if len(s) == 0 {
 		return
