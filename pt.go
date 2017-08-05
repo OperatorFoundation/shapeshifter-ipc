@@ -352,16 +352,31 @@ func ProxyDone() {
 // any. The only version we understand is "1". This function reads the
 // environment variable TOR_PT_MANAGED_TRANSPORT_VER.
 func getManagedTransportVer() (string, error) {
-	const transportVersion = "1"
+	// These must be listed in decreasing order of preference.
+	availableVersions := []string{"2", "1"}
+
 	managedTransportVer, err := GetenvRequired("TOR_PT_MANAGED_TRANSPORT_VER")
 	if err != nil {
 		return "", err
 	}
+
+	// Starts out at an invalid value.
+	foundIndex := len(availableVersions)
+
 	for _, offered := range strings.Split(managedTransportVer, ",") {
-		if offered == transportVersion {
-			return offered, nil
+		// Only scan versions more preferred than the one we've already found.
+		for index, available := range availableVersions[:foundIndex] {
+			if offered == available {
+				foundIndex = index
+				break
+			}
 		}
 	}
+
+	if foundIndex < len(availableVersions) {
+		return availableVersions[foundIndex], nil
+	}
+
 	return "", versionError("no-version")
 }
 
