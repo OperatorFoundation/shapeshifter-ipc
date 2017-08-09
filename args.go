@@ -129,6 +129,30 @@ func ParsePT2ClientParameters(s string) (args Args, err error) {
 	return args, nil
 }
 
+func ParsePT2ServerParameters(s string) (params map[string]Args, err error) {
+	opts := make(map[string]Args)
+
+	decoder := json.NewDecoder(strings.NewReader(s))
+	var result map[string]map[string]string
+	if err := decoder.Decode(&result); err != nil {
+		log.Fatal(err)
+		return nil, err
+	}
+
+	fmt.Println(result)
+
+	for key, sub := range result {
+		args := make(Args)
+		for key2, value := range sub {
+			args.Add(key2, value)
+		}
+
+		opts[key] = args
+	}
+
+	return opts, nil
+}
+
 // Parse a transport–name–value mapping as from TOR_PT_SERVER_TRANSPORT_OPTIONS.
 //
 // "<value> is a k=v string value with options that are to be passed to the
