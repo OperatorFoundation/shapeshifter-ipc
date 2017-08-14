@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"log"
 	"sort"
 	"strings"
 )
@@ -117,10 +116,9 @@ func ParsePT2ClientParameters(s string) (args Args, err error) {
 	decoder := json.NewDecoder(strings.NewReader(s))
 	var result map[string]string
 	if err := decoder.Decode(&result); err != nil {
-		log.Fatal(err)
+		fmt.Errorf("Error decoding JSON %q", err)
 		return nil, err
 	}
-	fmt.Println(result)
 
 	for key, value := range result {
 		args.Add(key, value)
@@ -131,15 +129,16 @@ func ParsePT2ClientParameters(s string) (args Args, err error) {
 
 func ParsePT2ServerParameters(s string) (params map[string]Args, err error) {
 	opts := make(map[string]Args)
+	if len(s) == 0 {
+		return opts, nil
+	}
 
 	decoder := json.NewDecoder(strings.NewReader(s))
 	var result map[string]map[string]string
 	if err := decoder.Decode(&result); err != nil {
-		log.Fatal(err)
+		fmt.Errorf("Error decoding JSON %q", err)
 		return nil, err
 	}
-
-	fmt.Println(result)
 
 	for key, sub := range result {
 		args := make(Args)
