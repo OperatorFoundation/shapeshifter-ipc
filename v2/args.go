@@ -3,35 +3,11 @@ package pt
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"sort"
 	"strings"
 )
-
-// Key–value mappings for the representation of client and server options.
-
-// Args maps a string key to a list of values. It is similar to url.Values.
-type Args map[string][]string
-
-// Get the first value associated with the given key. If there are any values
-// associated with the key, the value return has the value and ok is set to
-// true. If there are no values for the given key, value is "" and ok is false.
-// If you need access to multiple values, use the map directly.
-func (args Args) Get(key string) (value string, ok bool) {
-	if args == nil {
-		return "", false
-	}
-	vals, ok := args[key]
-	if !ok || len(vals) == 0 {
-		return "", false
-	}
-	return vals[0], true
-}
-
-// Append value to the list of values for key.
-func (args Args) Add(key, value string) {
-	args[key] = append(args[key], value)
-}
 
 // Return the index of the next unescaped byte in s that is in the term set, or
 // else the length of the string if no terminators appear. Additionally return
@@ -57,169 +33,33 @@ func indexUnescaped(s string, term []byte) (int, string, error) {
 	return i, string(unesc), nil
 }
 
-// Parse a name–value mapping as from an encoded SOCKS username/password.
-//
-// "If any [k=v] items are provided, they are configuration parameters for the
-// proxy: Tor should separate them with semicolons ... If a key or value value
-// must contain [an equals sign or] a semicolon or a backslash, it is escaped
-// with a backslash."
-func parseClientParameters(s string) (args Args, err error) {
-	args = make(Args)
+func ParsePT2ClientParameters(s string) (map[string]interface{}, error) {
 	if len(s) == 0 {
-		return
-	}
-	i := 0
-	for {
-		var key, value string
-		var offset, begin int
-
-		begin = i
-		// Read the key.
-		offset, key, err = indexUnescaped(s[i:], []byte{'=', ';'})
-		if err != nil {
-			return
-		}
-		i += offset
-		// End of string or no equals sign?
-		if i >= len(s) || s[i] != '=' {
-			err = fmt.Errorf("no equals sign in %q", s[begin:i])
-			return
-		}
-		// Skip the equals sign.
-		i++
-		// Read the value.
-		offset, value, err = indexUnescaped(s[i:], []byte{';'})
-		if err != nil {
-			return
-		}
-		i += offset
-		if len(key) == 0 {
-			err = fmt.Errorf("empty key in %q", s[begin:i])
-			return
-		}
-		args.Add(key, value)
-		if i >= len(s) {
-			break
-		}
-		// Skip the semicolon.
-		i++
-	}
-	return args, nil
-}
-
-func ParsePT2ClientParameters(s string) (args Args, err error) {
-	args = make(Args)
-	if len(s) == 0 {
-		return
+		return nil, errors.New("cannot use empty string")
 	}
 
 	decoder := json.NewDecoder(strings.NewReader(s))
-	var result map[string]string
+	var result map[string]interface{}
+	if err := decoder.Decode(&result); err != nil {
+		fmt.Errorf("Error decoding JSON %q", err)
+		return nil, err
+	}
+	return result, nil
+}
+
+func ParsePT2ServerParameters(s string) (params map[string]map[string]interface{}, err error) {
+	if len(s) == 0 {
+		return nil, errors.New("cannot use an empty string")
+	}
+
+	decoder := json.NewDecoder(strings.NewReader(s))
+	var result map[string]map[string]interface{}
 	if err := decoder.Decode(&result); err != nil {
 		fmt.Errorf("Error decoding JSON %q", err)
 		return nil, err
 	}
 
-	for key, value := range result {
-		args.Add(key, value)
-	}
-
-	return args, nil
-}
-
-func ParsePT2ServerParameters(s string) (params map[string]Args, err error) {
-	opts := make(map[string]Args)
-	if len(s) == 0 {
-		return opts, nil
-	}
-
-	decoder := json.NewDecoder(strings.NewReader(s))
-	var result map[string]map[string]string
-	if err := decoder.Decode(&result); err != nil {
-		fmt.Errorf("Error decoding JSON %q", err)
-		return nil, err
-	}
-
-	for key, sub := range result {
-		args := make(Args)
-		for key2, value := range sub {
-			args.Add(key2, value)
-		}
-
-		opts[key] = args
-	}
-
-	return opts, nil
-}
-
-// Parse a transport–name–value mapping as from TOR_PT_SERVER_TRANSPORT_OPTIONS.
-//
-// "<value> is a k=v string value with options that are to be passed to the
-// transport. Colons, semicolons, equal signs and backslashes must be escaped
-// with a backslash."
-// Example: trebuchet:secret=nou;trebuchet:cache=/tmp/cache;ballista:secret=yes
-func ParseServerTransportOptions(s string) (opts map[string]Args, err error) {
-	opts = make(map[string]Args)
-	if len(s) == 0 {
-		return
-	}
-	i := 0
-	for {
-		var methodName, key, value string
-		var offset, begin int
-
-		begin = i
-		// Read the method name.
-		offset, methodName, err = indexUnescaped(s[i:], []byte{':', '=', ';'})
-		if err != nil {
-			return
-		}
-		i += offset
-		// End of string or no colon?
-		if i >= len(s) || s[i] != ':' {
-			err = fmt.Errorf("no colon in %q", s[begin:i])
-			return
-		}
-		// Skip the colon.
-		i++
-		// Read the key.
-		offset, key, err = indexUnescaped(s[i:], []byte{'=', ';'})
-		if err != nil {
-			return
-		}
-		i += offset
-		// End of string or no equals sign?
-		if i >= len(s) || s[i] != '=' {
-			err = fmt.Errorf("no equals sign in %q", s[begin:i])
-			return
-		}
-		// Skip the equals sign.
-		i++
-		// Read the value.
-		offset, value, err = indexUnescaped(s[i:], []byte{';'})
-		if err != nil {
-			return
-		}
-		i += offset
-		if len(methodName) == 0 {
-			err = fmt.Errorf("empty method name in %q", s[begin:i])
-			return
-		}
-		if len(key) == 0 {
-			err = fmt.Errorf("empty key in %q", s[begin:i])
-			return
-		}
-		if opts[methodName] == nil {
-			opts[methodName] = make(Args)
-		}
-		opts[methodName].Add(key, value)
-		if i >= len(s) {
-			break
-		}
-		// Skip the semicolon.
-		i++
-	}
-	return opts, nil
+	return result, nil
 }
 
 // Escape backslashes and all the bytes that are in set.
@@ -239,7 +79,7 @@ func backslashEscape(s string, set []byte) string {
 // added.
 //
 // "Equal signs and commas [and backslashes] must be escaped with a backslash."
-func encodeSmethodArgs(args Args) string {
+func encodeSmethodArgs(args map[string]interface{}) string {
 	if args == nil {
 		return ""
 	}
@@ -256,9 +96,14 @@ func encodeSmethodArgs(args Args) string {
 
 	var pairs []string
 	for _, key := range keys {
-		for _, value := range args[key] {
-			pairs = append(pairs, escape(key)+"="+escape(value))
+		value:= args[key]
+		jsonByte, jsonError := json.Marshal(value)
+		if jsonError != nil {
+			continue
 		}
+		jsonString:= string(jsonByte)
+		pairs = append(pairs, escape(key)+"="+escape(jsonString))
+
 	}
 
 	return strings.Join(pairs, ",")

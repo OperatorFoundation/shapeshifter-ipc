@@ -334,7 +334,7 @@ func Smethod(name string, addr net.Addr) {
 // Or, if you just want to echo back the options provided by Tor from the
 // TransportServerOptions configuration,
 // 	pt.SmethodArgs(bindaddr.MethodName, ln.Addr(), bindaddr.Options)
-func SmethodArgs(name string, addr net.Addr, args Args) {
+func SmethodArgs(name string, addr net.Addr, args map[string]interface{}) {
 	line("SMETHOD", name, addr.String(), "ARGS:"+encodeSmethodArgs(args))
 }
 
@@ -477,7 +477,7 @@ type Bindaddr struct {
 	Addr       *net.TCPAddr
 	// Options from TOR_PT_SERVER_TRANSPORT_OPTIONS that pertain to this
 	// transport.
-	Options Args
+	Options map[string]interface{}
 }
 
 func parsePort(portStr string) (int, error) {
@@ -546,7 +546,7 @@ func getServerBindaddrs() ([]Bindaddr, error) {
 
 	// Parse the list of server transport options.
 	serverTransportOptions := Getenv("TOR_PT_SERVER_TRANSPORT_OPTIONS")
-	optionsMap, err := ParseServerTransportOptions(serverTransportOptions)
+	optionsMap, err := ParsePT2ServerParameters(serverTransportOptions)
 	if err != nil {
 		return nil, envError(fmt.Sprintf("TOR_PT_SERVER_TRANSPORT_OPTIONS: %q: %s", serverTransportOptions, err.Error()))
 	}

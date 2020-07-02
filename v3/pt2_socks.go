@@ -50,7 +50,7 @@ type SocksRequest struct {
 	// The endpoint requested by the client as a "host:port" string.
 	Target string
 	// The parsed contents of private authentication method as a key–value mapping.
-	Args Args
+	Args map[string]interface{}
 }
 
 // SocksConn encapsulates a net.Conn and information associated with a SOCKS request.
