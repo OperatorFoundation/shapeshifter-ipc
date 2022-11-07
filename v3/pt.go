@@ -538,51 +538,6 @@ func FilterBindaddrs(addrs []Bindaddr, methodNames []string) []Bindaddr {
 	return result
 }
 
-// Return an array of Bindaddrs, being the contents of TOR_PT_SERVER_BINDADDR
-// with keys filtered by TOR_PT_SERVER_TRANSPORTS. Transport-specific options
-// from TOR_PT_SERVER_TRANSPORT_OPTIONS are assigned to the Options member.
-func getServerBindaddrs() ([]Bindaddr, error) {
-	var result []Bindaddr
-
-	// Parse the list of server transport options.
-	serverTransportOptions := Getenv("TOR_PT_SERVER_TRANSPORT_OPTIONS")
-	optionsMap, err := ParsePT2ServerParameters(serverTransportOptions)
-	if err != nil {
-		return nil, envError(fmt.Sprintf("TOR_PT_SERVER_TRANSPORT_OPTIONS: %q: %s", serverTransportOptions, err.Error()))
-	}
-
-	// Get the list of all requested bindaddrs.
-	serverBindaddr, err := GetenvRequired("TOR_PT_SERVER_BINDADDR")
-	if err != nil {
-		return nil, err
-	}
-	for _, spec := range strings.Split(serverBindaddr, ",") {
-		var bindaddr Bindaddr
-
-		parts := strings.SplitN(spec, "-", 2)
-		if len(parts) != 2 {
-			return nil, envError(fmt.Sprintf("TOR_PT_SERVER_BINDADDR: %q: doesn't contain \"-\"", spec))
-		}
-		bindaddr.MethodName = parts[0]
-		addr, err := ResolveAddr(parts[1])
-		if err != nil {
-			return nil, envError(fmt.Sprintf("TOR_PT_SERVER_BINDADDR: %q: %s", spec, err.Error()))
-		}
-		bindaddr.Addr = addr
-		bindaddr.Options = optionsMap[bindaddr.MethodName]
-		result = append(result, bindaddr)
-	}
-
-	// Filter by TOR_PT_SERVER_TRANSPORTS.
-	serverTransports, err := GetenvRequired("TOR_PT_SERVER_TRANSPORTS")
-	if err != nil {
-		return nil, err
-	}
-	result = FilterBindaddrs(result, strings.Split(serverTransports, ","))
-
-	return result, nil
-}
-
 func readAuthCookie(f io.Reader) ([]byte, error) {
 	authCookieHeader := []byte("! Extended ORPort Auth Cookie !\x0a")
 	buf := make([]byte, 64)
@@ -627,70 +582,6 @@ type ServerInfo struct {
 	OrAddr         *net.TCPAddr
 	ExtendedOrAddr *net.TCPAddr
 	AuthCookiePath string
-}
-
-// Check the server pluggable transports environment, emitting an error message
-// and returning a non-nil error if any error is encountered. Resolves the
-// various requested bind addresses, the server ORPort and extended ORPort, and
-// reads the auth cookie file. Returns a ServerInfo struct.
-//
-// If your program needs to know whether to call ClientSetup or ServerSetup
-// (i.e., if the same program can be run as either a client or a server), check
-// whether the TOR_PT_CLIENT_TRANSPORTS environment variable is set:
-// 	if os.Getenv("TOR_PT_CLIENT_TRANSPORTS") != "" {
-// 		// Client mode; call pt.ClientSetup.
-// 	} else {
-// 		// Server mode; call pt.ServerSetup.
-// 	}
-//
-// Always pass nil for the unused single parameter. In the past, the parameter
-// was a list of transport names to use in case Tor requested "*". That feature
-// was never implemented and has been removed from the pluggable transports
-// specification.
-// https://trac.torproject.org/projects/tor/ticket/15612
-func ServerSetup(_ []string) (info ServerInfo, err error) {
-	ver, err := getManagedTransportVer()
-	if err != nil {
-		return
-	}
-	line("VERSION", ver)
-
-	info.Bindaddrs, err = getServerBindaddrs()
-	if err != nil {
-		return
-	}
-
-	orPort := Getenv("TOR_PT_ORPORT")
-	if orPort != "" {
-		info.OrAddr, err = ResolveAddr(orPort)
-		if err != nil {
-			err = envError(fmt.Sprintf("cannot resolve TOR_PT_ORPORT %q: %s", orPort, err.Error()))
-			return
-		}
-	}
-
-	info.AuthCookiePath = Getenv("TOR_PT_AUTH_COOKIE_FILE")
-
-	extendedOrPort := Getenv("TOR_PT_EXTENDED_SERVER_PORT")
-	if extendedOrPort != "" {
-		if info.AuthCookiePath == "" {
-			err = envError("need TOR_PT_AUTH_COOKIE_FILE environment variable with TOR_PT_EXTENDED_SERVER_PORT")
-			return
-		}
-		info.ExtendedOrAddr, err = ResolveAddr(extendedOrPort)
-		if err != nil {
-			err = envError(fmt.Sprintf("cannot resolve TOR_PT_EXTENDED_SERVER_PORT %q: %s", extendedOrPort, err.Error()))
-			return
-		}
-	}
-
-	// Need either OrAddr or ExtendedOrAddr.
-	if info.OrAddr == nil && info.ExtendedOrAddr == nil {
-		err = envError("need TOR_PT_ORPORT or TOR_PT_EXTENDED_SERVER_PORT environment variable")
-		return
-	}
-
-	return info, nil
 }
 
 // See 217-ext-orport-auth.txt section 4.2.1.3.
