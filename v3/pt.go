@@ -477,7 +477,7 @@ type Bindaddr struct {
 	Addr       *net.TCPAddr
 	// Options from TOR_PT_SERVER_TRANSPORT_OPTIONS that pertain to this
 	// transport.
-	Options map[string]interface{}
+	Options string
 }
 
 func parsePort(portStr string) (int, error) {
